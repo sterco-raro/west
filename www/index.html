@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <title>west</title>
+  <meta charset="utf-8">
+
+  <!-- User styles -->
+  <link rel="stylesheet" type="text/css" href="./css/styles.css">
+
+  <!-- Roslibjs -->
+  <!-- <script type="text/javascript" src="lib/roslib.min.js"></script> -->
+  <script type="text/javascript" src="lib/roslib.js"></script>
+
+</head>
+<body>
+
+  <div class="container">
+
+  <!-- initial title, will be replaced by app.js -->
+    <header>
+      <h2>west</h2>
+      <hr>
+    </header>
+
+    <!-- Control buttons -->
+    <section id="controls" class="dynamic">
+      <button id="button_logs" class="control-off" onclick="show_section('logs'); return false;">logs</button>
+      <button id="button_nodes" class="control-off" onclick="show_section('nodes'); return false;">nodes</button>
+      <button id="button_services" class="control-off" onclick="show_section('services'); return false;">services</button>
+      <hr>
+    </section>
+
+    <!-- Subscriptions -->
+    <section id="section_logs" class="dynamic">
+      <ul id="logs" class="logs"></ul>
+    <hr>
+    </section>
+    <!-- Nodes list -->
+    <section id="section_nodes" class="dynamic">
+      <ul id="nodes" class="list"></ul>
+    <hr>
+    </section>
+    <!-- Services list -->
+    <section id="section_services" class="dynamic">
+      <ul id="services" class="list"></ul>
+    <hr>
+    </section>
+
+    <!-- Connection popup -->
+    <div id="connection_modal" class="modal">
+      <form>
+        <!-- Address -->
+        <h4>Address</h4>
+        <input type="text" name="address" placeholder="IP address" required>
+        <!-- Port -->
+        <h4>Port</h4>
+        <input type="number" name="port" placeholder="Port number" required>
+
+        <br>
+        <br>
+
+        <!-- Confirm button -->
+        <span style="float: right;">
+          <button class="control-off" type="submit" onclick="validate(this.form); return false;">connect</button>
+        </span>
+      </form>
+    </div>
+
+    <!-- Service call popup -->
+    <div id="service_call_modal" class="special">
+      <form id="service_form">
+        <!-- container for service parameters, if any -->
+        <div id="input_container"></div>
+        <br>
+        <!-- Confirm button -->
+        <span style="float: right;">
+          <button id="confirm_call" class="control-off" type="submit" onclick="validate_params(this.form); return false;">call</button>
+        </span>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- App code -->
+  <script type="text/javascript" src="js/app.js"></script>
+
+</body>
+</html>
