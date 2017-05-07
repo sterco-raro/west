@@ -21,7 +21,6 @@ function validate (form)
 function validate_builder (ros)
 {
   return function (form) {
-    console.log('IMANEWFUNCTION');
     // check values for all input tags
     // the last element is a submit button, hence the length - 1
     let params = {};
@@ -67,6 +66,7 @@ function call_service (ros, name, type, params, success_cb, error_cb)
 // build service call parameters form with request details
 function build_params_form (name, details)
 {
+  let modal = document.getElementById('service_call_modal');
   let form = document.getElementById('service_form');
   let div = document.getElementById('input_container');
 
@@ -75,8 +75,9 @@ function build_params_form (name, details)
   form.setAttribute('servicetype', details.type);
 
   // create an input tag for every service param
-  // fieldnames[] and fieldtypes[] have same length 
-  for (let i = 0; i < details.fieldnames.length; i++)
+  // fieldnames[] and fieldtypes[] have same length
+  let i = 0;
+  for (; i < details.fieldnames.length; i++)
   {
     let label = document.createElement('h4');
     let input = document.createElement('input');
@@ -103,8 +104,12 @@ function build_params_form (name, details)
     div.appendChild(label);
     div.appendChild(input);
   }
+  // set new div height
+  let h = (i + 1) * 80;
+  modal.style['min-height'] = h + 'px';
+  modal.style['max-height'] = h + 'px';
   // done creating form, show modal
-  document.getElementById('service_call_modal').style.display = 'block';
+  modal.style.display = 'block';
 }
 
 // update header text and show controls
@@ -228,4 +233,5 @@ function show_section (name)
 window.onload = function () {
   // show connection popup
   document.getElementById('connection_modal').style.display = 'block';
+  document.getElementById('service_call_modal').style.display = 'none';
 }
