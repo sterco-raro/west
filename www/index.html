@@ -15,70 +15,51 @@
 </head>
 <body>
 
-  <div class="container">
+  <div id="main" class="container">
 
-  <!-- initial title, will be replaced by app.js -->
-    <header>
-      <h2>west</h2>
-      <hr>
-    </header>
+    <section>
+      <header>
+        <h2>west</h2>
+        <p>a simple and clean web interface to control a remote ros machine</p>
+      </header>
 
-    <!-- Control buttons -->
-    <section id="controls" class="dynamic">
-      <button id="button_logs" class="control-off" onclick="show_section('logs'); return false;">logs</button>
-      <button id="button_nodes" class="control-off" onclick="show_section('nodes'); return false;">nodes</button>
-      <button id="button_services" class="control-off" onclick="show_section('services'); return false;">services</button>
       <hr>
     </section>
 
-    <!-- Subscriptions -->
-    <section id="section_logs" class="dynamic">
-      <ul id="logs" class="logs"></ul>
-    <hr>
-    </section>
-    <!-- Nodes list -->
-    <section id="section_nodes" class="dynamic">
-      <ul id="nodes" class="list"></ul>
-    <hr>
-    </section>
-    <!-- Services list -->
-    <section id="section_services" class="dynamic">
-      <ul id="services" class="list"></ul>
-    <hr>
-    </section>
-
-    <!-- Connection popup -->
-    <div id="connection_modal" class="modal">
+    <section id="connection">
       <form>
-        <!-- Address -->
-        <h4>Address</h4>
-        <input type="text" name="address" placeholder="IP address" required>
-        <!-- Port -->
-        <h4>Port</h4>
-        <input type="number" name="port" placeholder="Port number" required>
-
+        <input type="text" name="address" placeholder="remote machine ip" maxlength="20" required>
         <br>
         <br>
-
-        <!-- Confirm button -->
-        <span style="float: right;">
-          <button class="control-off" type="submit" onclick="validate(this.form); return false;">connect</button>
-        </span>
+        <input type="number" name="port" placeholder="listening port" maxlength="20" required>
+        <br>
+        <br>
+        <button type="submit" onclick="validate(this.form); return false;">connect</button>
       </form>
-    </div>
+      <hr>
+    </section>
 
-    <!-- Service call popup -->
-    <div id="service_call_modal" class="modal">
-      <form id="service_form">
-        <!-- container for service parameters, if any -->
-        <div id="input_container"></div>
-        <br>
-        <!-- Confirm button -->
-        <span style="float: right;">
-          <button id="confirm_call" class="control-off" type="submit" onclick="validate_params(this.form); return false;">call</button>
-        </span>
-      </form>
-    </div>
+    <section id="controls">
+      <button onclick="toggle_visibility('running'); return false;">active nodes</button>
+      <button onclick="toggle_visibility('logs'); return false;">subscriptions</button>
+      <button onclick="toggle_visibility('packages'); return false;">launch</button>
+      <hr>
+    </section>
+
+    <section id="running">
+      <ul></ul>
+      <hr>
+    </section>
+
+    <section id="logs">
+      <ul></ul>
+      <hr>
+    </section>
+
+    <section id="packages">
+      <ul></ul>
+      <hr>
+    </section>
 
   </div>
 

@@ -1,72 +1,80 @@
 /*
-  Custom colors
-  palette: http://colorhunt.co/c/2763
+  palette: http://colorhunt.co/c/69534
+  except for border color (initially green)
 
-  title:   #222831
-  text:    #393E46
-  border:  #008CBA
-  bg:      #EEEEEE
-
+  title:   #008cba
+  text:    #475762
+  border:  #fbd490
+  bg:      #eceff4
 */
 
-/* DOM elements */
 body
 {
-  background-color: #fefefe;
-  color: #393e46;
+  background-color: #eceff4;
+  color: #475762;
+
+  font-family: monospace;
+  font-size: 14px;
 }
 
-header b
+header h2
 {
   color: #008CBA;
 }
 
 button
 {
+  display: inline-block;
   border-radius: 8px;
+  border: 2px solid #00bcba;
+
+  font-family: monospace;
+  font-size: 14px;
 }
 
-.control-off
+/* input focus feedback using box-shadow */
+input
 {
-  background-color: white;
-  color: #393e46;
-  border: 2px solid #008CBA;
+  font-family: monospace;
+  font-size: 14px;
+  border: 0;
 
-  -webkit-transition-duration: 0.4s; /* Safari */
-  transition-duration: 0.4s;
+  transition: box-shadow 0.3s;
+  -webkit-transition: box-shadow 0.3s;
 }
 
-.control-off:hover
+input:focus
 {
-  background-color: #008CBA;
-  color: white;
+  outline: none;
+  box-shadow: 0px 2px 2px 0px #00bcba;
 }
 
-.control-on
+/* hide spin button for numbers input in webkit */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button
 {
-  background-color: #008CBA;
-  color: white;
-  border: 2px solid #008CBA;
-
-  -webkit-transition-duration: 0.4s; /* Safari */
-  transition-duration: 0.4s;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.control-on:hover
+/* hide spin button for numbers input in webkit */
+input[type="number"]
 {
-  background-color: white;
-  color: #008CBA;
+  -moz-appearance: textfield;
 }
 
-.dynamic
-{
-  display: none;
-}
-
-.list, .logs
+/* lists and sublists default style */
+ul
 {
   list-style-type: none;
   padding: 0;
+  margin: 0;
+}
+
+ul ul
+{
+  display: none;
+  font-size: 12px;
 }
 
 .container
@@ -77,61 +85,16 @@ button
   text-align: center;
 }
 
-.modal
-{
-  position: absolute;
-  display: none;
-
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  margin: auto;
-
-  z-index: 1;
-  opacity: 1;
-
-  padding: 10px;
-  width: 500px;
-  min-height: 200px;
-  max-height: 200px;
-  border-radius: 10px;
-
-  color: #393e46;
-  background: rgba(255,255,255,1);
-
-  -webkit-box-shadow: 3px 3px 3px 2px rgba(0,0,0,0.4);
-  box-shadow: 3px 3px 3px 2px rgba(0,0,0,0.4);
-  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
-  filter: alpha(opacity=0);
-
-  -webkit-transition: opacity 1s ease;
-  -moz-transition: opacity 1s ease;
-  -ms-transition: opacity 1s ease;
-  -o-transition: opacity 1s ease;
-  transition: opacity 1s ease;
-}
-
-.params
-{
-  height: 'none';
-}
-
-.modal p
-{
-  text-align: left;
-}
-
 @media only screen
 and (max-width : 480px)
 {
-  .container, .modal
+  .container
   { width: auto; }
 }
 
 @media only screen 
 and (min-width : 481px)
 {
-  .container, .modal
+  .container
   { width: 400px; }
 }

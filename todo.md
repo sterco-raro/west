@@ -1,4 +1,3 @@
 # todo
 
-- list of available nodes on ros
-- launch a new node
+- launch a new node via the web interface
