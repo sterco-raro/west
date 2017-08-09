@@ -14,6 +14,7 @@ add_service_files(
   FILES
   PackList.srv
   NodeList.srv
+  ServiceList.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -35,4 +36,4 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-${catkin_EXPORTED_TARGETS})
+#${catkin_EXPORTED_TARGETS})
