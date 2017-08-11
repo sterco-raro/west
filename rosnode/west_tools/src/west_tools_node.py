@@ -41,13 +41,13 @@ def handle_node_list (req):
 def handle_service_list (req):
 	# obtain relative node service list
 	cmd = ['rosnode', 'info', req.node]
-	result = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
-	result = ((result.split('Services: \n')[1]).split('\n\n')[0]).split('\n')
-	if len(result) > 1:
-		result = map(lambda x: x.rsplit('* ')[1], result)
-	print result
-	print '-------------'
-	return ServiceListResponse(result)
+	services = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
+	services = ((services.split('Services: \n')[1]).split('\n\n')[0]).split('\n')
+	
+	if len(services) > 1:
+		services = map(lambda x: x.rsplit('* ')[1], services)
+	
+	return ServiceListResponse(services)
 
 if __name__ == '__main__':
 	
@@ -56,5 +56,5 @@ if __name__ == '__main__':
 	rospy.Service('pack_list', PackList, handle_pack_list)
 	rospy.Service('node_list', NodeList, handle_node_list)
 	rospy.Service('service_list', ServiceList, handle_service_list)
-	print 'Available services \n\t /pack_list \n\t /node_list <package>'
+	print 'Available services \n\t /pack_list \n\t /node_list <package> \n\t /service_list <node>'
 	rospy.spin()

@@ -1,5 +1,5 @@
 // cache object to store remote calls output
-var cache = { packages: undefined };
+var cache = { packages: undefined, nodes: undefined };
 
 function toggle_visibility (id, status)
 {
@@ -59,6 +59,12 @@ function launch_node (event)
   console.log('launching ' + event.target.innerHTML + ' ...');
 }
 
+// TODO call service frome west backend
+function launch_service (event)
+{
+  console.log('launching ' + event.target.innerHTML + ' service ...')
+}
+
 function update_header (address, port)
 {
   let header = document.getElementsByTagName('header')[0];
@@ -97,6 +103,37 @@ function update_nodes_sublist (curr, parent)
 
     sub_el.appendChild(h5);
     sub.appendChild(sub_el);
+  }
+
+  // append sublist to first level list
+  parent.appendChild(sub);
+}
+
+function update_services_sublist (curr, parent)
+{
+  // don't create sublists if no nodes are available
+  if (cache.nodes[curr].services[0] === "")
+    return;
+
+  // build sublist from cache
+  let id = cache.nodes[curr].name + '_services';
+  let sub = document.createElement('ul');
+
+  // set sublist id for later retrieval
+  sub.id = id;
+  sub.style.display = 'inline-block';
+
+  for (let j = 0; j < cache.nodes[curr].services.length; j++)
+  {
+    let sub_el = document.createElement('li');
+    let h5 = document.createElement('h5');
+
+    h5.innerHTML = cache.nodes[curr].services[j];
+    // for each element set onclick as launch_service something
+    h5.addEventListener('click', launch_service);
+
+    sub_el.appendChild(h5);
+    sub.appendChild(sub_el)
   }
 
   // append sublist to first level list
@@ -144,6 +181,53 @@ function update_available_packages (ros)
 
       li.appendChild(h4);
       document.getElementById('packages').children[0].appendChild(li);
+    }
+  }
+}
+
+function update_available_nodes (ros)
+{
+  // Hello world
+  if (cache && cache.nodes !== undefined)
+  {
+    for (let i = 0; i < cache.nodes.length; i++)
+    {
+      let li = document.createElement('li');
+      let h4 = document.createElement('h4');
+
+      h4.innerHTML = cache.nodes[i].name;
+
+      h4.addEventListener('click', function (event) {
+        let parent = event.target.parentNode;
+
+        if (cache.nodes[i].services !== undefined)
+        {
+          toggle_visibility(cache.nodes[i].name + '_services');
+        }
+        else
+        {
+          // get services list from current node
+          call_service(ros,
+            '/service_list', 'west_tools/ServiceList',
+            { node: cache.nodes[i].name },
+            function (result) {
+              cache.nodes[i].services = [];
+              for (let j = 0; j < result.service_list.length; j++) {
+                cache.nodes[i].services.push(result.service_list[j]);
+              }
+              //trigger list view update
+              if (result.service_list.length >= 1 && result.service_list[0] !== '')
+                update_services_sublist(i, parent);
+            },
+            function (error) {
+              console.log('service_list:  ' + error);
+            }
+          );
+        }
+      });
+
+      li.appendChild(h4);
+      document.getElementById('running').children[0].appendChild(li);
     }
   }
 }
@@ -212,19 +296,24 @@ function connect_to_ros (data)
     });
 
     // get all running nodes on remote host
-    ros.getNodes((data) => {
-      let list = document.getElementById('running').children[0];
+    if (cache.nodes === undefined)
+    {
+      // get all running nodes on remote host
+      ros.getNodes((data) => {
+        cache.nodes = [];
 
-      for (let i = 0; i < data.length; i++)
-      {
-        let li = document.createElement('li');
-
-        li.innerHTML = '<h4>' + data[i] + '</h4>';
-        li.setAttribute('node_name', data[i]);
-
-        list.appendChild(li);
-      }
-    });
+        for (let i = 0; i < data.length; i++)
+        {
+          cache.nodes.push({
+            name: data[i],
+            services: undefined
+          });
+        }
+        // manually trigger nodes list view update
+        if (data.length >= 1 && data[0] !== '')
+          update_available_nodes(ros);
+      });
+    }
   }); // on connection
 }
 
