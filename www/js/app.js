@@ -78,64 +78,27 @@ function update_header (address, port)
   toggle_visibility('connection', 'none');
 }
 
-function update_nodes_sublist (curr, parent)
+function update_sublist (curr, parent, id, fun)
 {
   // don't create sublists if no nodes are available
-  if (cache.packages[curr].nodes[0] === "")
-    return;
+  if (curr[0] === "") return;
 
   // build sublist from cache
-  let id = cache.packages[curr].name + '_nodes';
   let sub = document.createElement('ul');
-
-  // set sublist id for later retrieval
   sub.id = id;
   sub.style.display = 'inline-block';
 
-  for (let j = 0; j < cache.packages[curr].nodes.length; j++)
+  for (let i = 0; i < curr.length; i++)
   {
     let sub_el = document.createElement('li');
     let h5 = document.createElement('h5');
 
-    h5.innerHTML = cache.packages[curr].nodes[j];
-    // for each element set onclick as launch_node something
-    h5.addEventListener('click', launch_node);
-
+    h5.innerHTML = curr[i];
+    // for each element set onclick event
+    h5.addEventListener('click', fun);
     sub_el.appendChild(h5);
     sub.appendChild(sub_el);
   }
-
-  // append sublist to first level list
-  parent.appendChild(sub);
-}
-
-function update_services_sublist (curr, parent)
-{
-  // don't create sublists if no nodes are available
-  if (cache.nodes[curr].services[0] === "")
-    return;
-
-  // build sublist from cache
-  let id = cache.nodes[curr].name + '_services';
-  let sub = document.createElement('ul');
-
-  // set sublist id for later retrieval
-  sub.id = id;
-  sub.style.display = 'inline-block';
-
-  for (let j = 0; j < cache.nodes[curr].services.length; j++)
-  {
-    let sub_el = document.createElement('li');
-    let h5 = document.createElement('h5');
-
-    h5.innerHTML = cache.nodes[curr].services[j];
-    // for each element set onclick as launch_service something
-    h5.addEventListener('click', launch_service);
-
-    sub_el.appendChild(h5);
-    sub.appendChild(sub_el)
-  }
-
   // append sublist to first level list
   parent.appendChild(sub);
 }
@@ -170,7 +133,7 @@ function update_available_packages (ros)
               }
               // trigger list view update
               if (result.node_list.length >= 1 && result.node_list[0] !== '')
-                update_nodes_sublist(i, parent);
+                update_sublist(cache.packages[i].nodes, parent, cache.packages[i].name + '_nodes', launch_node);
             },
             function (error) {
               console.log('node_list:  ' + error);
@@ -217,7 +180,7 @@ function update_available_nodes (ros)
               }
               //trigger list view update
               if (result.service_list.length >= 1 && result.service_list[0] !== '')
-                update_services_sublist(i, parent);
+                update_sublist(cache.nodes[i].services, parent, cache.nodes[i].name + '_services',launch_service);
             },
             function (error) {
               console.log('service_list:  ' + error);

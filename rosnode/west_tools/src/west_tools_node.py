@@ -12,6 +12,7 @@ def handle_pack_list (req):
 	packs = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
 	packs = packs.split('\n')
 
+	# now @packs is a list of available package on ros workspace
 	return PackListResponse(packs)
 
 def handle_node_list (req):
@@ -44,17 +45,23 @@ def handle_service_list (req):
 	services = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
 	services = ((services.split('Services: \n')[1]).split('\n\n')[0]).split('\n')
 	
+	# only check on actual lists, not the empty set
 	if len(services) > 1:
+		# take the string that follow each '* ' char
 		services = map(lambda x: x.rsplit('* ')[1], services)
 	
+	# now @services is a list that contains node related services
 	return ServiceListResponse(services)
 
 if __name__ == '__main__':
 	
 	print '\n--- Welcome to West tools server ---\n'
 	rospy.init_node('west_tools_server')
+	
+	# expose west services
 	rospy.Service('pack_list', PackList, handle_pack_list)
 	rospy.Service('node_list', NodeList, handle_node_list)
 	rospy.Service('service_list', ServiceList, handle_service_list)
+
 	print 'Available services \n\t /pack_list \n\t /node_list <package> \n\t /service_list <node>'
 	rospy.spin()
