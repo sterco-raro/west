@@ -1,5 +1,5 @@
 // cache object to store remote calls output
-var cache = { packages: undefined, nodes: undefined };
+var cache = { ros: undefined, packages: undefined, nodes: undefined };
 
 function toggle_visibility (id, status)
 {
@@ -39,6 +39,108 @@ function validate (form)
   }
 }
 
+// build service call parameters form with request details
+function build_params_form (name, details)
+{
+  let modal = document.getElementById('service_param');
+  let form = document.getElementById('service_form');
+  let div = document.getElementById('param_container');
+
+  // save service info inside form
+  form.setAttribute('servicename', name);
+  form.setAttribute('servicetype', details.type);
+  
+  let title = document.createElement('h4');
+  title.innerHTML = 'Service : ' + name + '<br> Type : ' + details.type;
+  div.appendChild(title);
+  div.appendChild(document.createElement('hr'));
+
+  // create an input tag for every service param
+  // fieldnames[] and fieldtypes[] have same length
+  let i = 0;
+  for (; i < details.fieldnames.length; i++)
+  {
+    let label = document.createElement('h4');
+    let input = document.createElement('input');
+
+    // set label as param name
+    label.innerHTML = details.fieldnames[i];
+    // setup input field
+    input.setAttribute('name', details.fieldnames[i]);
+    input.setAttribute('placeholder', details.fieldtypes[i]);
+    input.setAttribute('required', true);
+
+    // set correct type for input
+    let type = '';
+    if (details.fieldtypes[i] === 'string')
+      type = 'text';
+    else if (details.fieldtypes[i] === 'bool')
+      type = 'checkbox';
+    else {
+      type = 'number';
+      input.setAttribute('step', 'any');
+    }
+    input.setAttribute('type', type);
+
+    div.appendChild(label);
+    div.appendChild(input);
+    div.appendChild(document.createElement('hr'));
+  }
+  // set new div height
+  let h = (i + 1) * 80;
+  modal.style['min-height'] = h + 'px';
+  modal.style['max-height'] = h + 'px';
+  // done creating form, show modal
+  modal.style.display = 'block';
+}
+
+
+// Check if param form input is valid. If it is, try to call relative service
+function validate_param_form (form)
+{
+  console.log('validate form ...');
+
+  let param = {};
+
+  for (let i = 0; i < form.elements.length -2; i++)
+  {
+    // if current element is an input tag
+    if (isNaN(form.elements[i].value))
+      param[form.elements[i].name] = form.elements[i].value;
+    else
+      param[form.elements[i].name] = Number(form.elements[i].value);
+  }
+
+  // call service
+  call_service(
+    cache.ros,
+    form.getAttribute('servicename'),
+    form.getAttribute('servicetype'),
+    param,
+    (result) => {
+      console.log('service called successfully!');
+      console.log(result);
+    },
+    (error) => {
+      console.log('service NOT called!');
+      console.log(error);
+    }
+  );
+
+  // clear service param modal
+  form.removeAttribute('servicename');
+  form.removeAttribute('servicetype');
+  cancel_param_form(form);
+}
+
+// cancel service request
+function cancel_param_form (form)
+{
+  toggle_visibility('service_param');
+  document.getElementById('param_container').innerHTML = '';
+}
+
+
 // TODO: docstring
 function call_service (ros, name, type, params, success_cb, error_cb)
 {
@@ -53,16 +155,25 @@ function call_service (ros, name, type, params, success_cb, error_cb)
   srv.callService(request, success_cb, error_cb);
 }
 
-// TODO: call service from west backend
+// TODO: launch new node from west backend
 function launch_node (event)
 {
   console.log('launching ' + event.target.innerHTML + ' ...');
 }
 
-// TODO call service frome west backend
+// callback of service click
 function launch_service (event)
 {
-  console.log('launching ' + event.target.innerHTML + ' service ...')
+  console.log('launching ' + event.target.innerHTML + ' service ...');
+  // retrive service type and params by name
+  cache.ros.getServiceType(event.target.innerHTML, (type) => {
+    cache.ros.getServiceRequestDetails(type, (typeDetails) => {
+      cancel_param_form();
+      build_params_form(event.target.innerHTML, typeDetails.typedefs[0]);    
+    });
+  });
+
+  toggle_visibility('service_param');
 }
 
 function update_header (address, port)
@@ -150,7 +261,6 @@ function update_available_packages (ros)
 
 function update_available_nodes (ros)
 {
-  // Hello world
   if (cache && cache.nodes !== undefined)
   {
     for (let i = 0; i < cache.nodes.length; i++)
@@ -180,7 +290,12 @@ function update_available_nodes (ros)
               }
               //trigger list view update
               if (result.service_list.length >= 1 && result.service_list[0] !== '')
-                update_sublist(cache.nodes[i].services, parent, cache.nodes[i].name + '_services',launch_service);
+                update_sublist(
+                  cache.nodes[i].services,
+                  parent,
+                  cache.nodes[i].name + '_services',
+                  launch_service
+                );
             },
             function (error) {
               console.log('service_list:  ' + error);
@@ -200,6 +315,8 @@ function connect_to_ros (data)
   var ros = new ROSLIB.Ros({
     url: 'ws://' + data.address + ':' + data.port
   });
+  // store ros variable in cache
+  cache.ros = ros;
 
   ros.on('error', (error) => {
     console.log('connection error: ', error);
@@ -288,4 +405,5 @@ window.onload = function ()
   toggle_visibility('running', 'none');
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
+  toggle_visibility('service_param', 'none');
 }

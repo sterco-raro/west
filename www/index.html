@@ -61,6 +61,16 @@
       <hr>
     </section>
 
+    <section id="service_param" class="modal">
+      <form id="service_form">
+        <!-- container for service params, if any -->
+        <div id="param_container"></div>
+        <!-- cancel and confirm button -->
+        <button type="button" onclick="cancel_param_form(this.form); return false;">cancel</button>
+        <button type="button" onclick="validate_param_form(this.form); return false;">call service</button>
+      </form>
+    </section>
+
   </div>
 
   <!-- App code -->
