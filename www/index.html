@@ -40,9 +40,9 @@
     </section>
 
     <section id="controls">
-      <button onclick="toggle_visibility('running'); return false;">active nodes</button>
-      <button onclick="toggle_visibility('logs'); return false;">subscriptions</button>
-      <button onclick="toggle_visibility('packages'); return false;">launch</button>
+      <button onclick="switch_visibility('running'); return false;">active nodes</button>
+      <button onclick="switch_visibility('logs'); return false;">subscriptions</button>
+      <button onclick="switch_visibility('packages'); return false;">launch</button>
       <hr>
     </section>
 
@@ -61,13 +61,14 @@
       <hr>
     </section>
 
-    <section id="service_param" class="modal">
-      <form id="service_form">
-        <!-- container for service params, if any -->
-        <div id="param_container"></div>
-        <!-- cancel and confirm button -->
-        <button type="button" onclick="cancel_param_form(this.form); return false;">cancel</button>
-        <button type="button" onclick="validate_param_form(this.form); return false;">call service</button>
+    <section id="param_section">
+      <header></header>
+      <form id="param_form">
+        <ul></ul>
+        <br>
+        <br>
+        <button type="button" onclick="clear_param_section(this.form); return false;"> cancel </button>
+        <button type="submit" onclick="validate_param_section(this.form); return false;"> call service </button>  
       </form>
     </section>
 

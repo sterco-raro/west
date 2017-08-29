@@ -21,6 +21,17 @@ function toggle_visibility (id, status)
     element.style.display = 'none';
 }
 
+function switch_visibility (id)
+{
+  // hide all section
+  toggle_visibility('running', 'none');
+  toggle_visibility('logs', 'none');
+  toggle_visibility('packages', 'none');
+  toggle_visibility('param_section', 'none');
+  // display only selected section
+  toggle_visibility(id, 'block');
+}
+
 // Check if form input is valid. If it is, try to connect to ros
 function validate (form)
 {
@@ -40,69 +51,64 @@ function validate (form)
 }
 
 // build service call parameters form with request details
-function build_params_form (name, details)
+function build_param_section (name, details)
 {
-  let modal = document.getElementById('service_param');
-  let form = document.getElementById('service_form');
-  let div = document.getElementById('param_container');
+  let param_section = document.getElementById('param_section');
+  // param_section -> header
+  let header = param_section.children[0];
 
-  // save service info inside form
-  form.setAttribute('servicename', name);
-  form.setAttribute('servicetype', details.type);
-  
-  let title = document.createElement('h4');
-  title.innerHTML = 'Service : ' + name + '<br> Type : ' + details.type;
-  div.appendChild(title);
-  div.appendChild(document.createElement('hr'));
+  let form = document.getElementById('param_form');
+  // form -> ul
+  let ul = form.children[0];
 
-  // create an input tag for every service param
-  // fieldnames[] and fieldtypes[] have same length
-  let i = 0;
-  for (; i < details.fieldnames.length; i++)
+  header.innerHTML = 'Service name : ' + name + '<br>Service type : ' + details.type;
+
+  form.setAttribute('service_name', name);
+  form.setAttribute('service_details', details.type);
+
+  for (let i = 0; i < details.fieldnames.length; i++)
   {
-    let label = document.createElement('h4');
+    let li = document.createElement('li');
+    let h3 = document.createElement('h3');
     let input = document.createElement('input');
+    
+    h3.innerHTML = details.fieldnames[i];
 
-    // set label as param name
-    label.innerHTML = details.fieldnames[i];
-    // setup input field
     input.setAttribute('name', details.fieldnames[i]);
     input.setAttribute('placeholder', details.fieldtypes[i]);
     input.setAttribute('required', true);
 
     // set correct type for input
-    let type = '';
     if (details.fieldtypes[i] === 'string')
-      type = 'text';
+    {
+      input.setAttribute('type', 'text');
+    }
     else if (details.fieldtypes[i] === 'bool')
-      type = 'checkbox';
+    {
+      input.setAttribute('type', 'checkbox');
+    }
     else {
-      type = 'number';
+      input.setAttribute('type', 'number');
       input.setAttribute('step', 'any');
     }
-    input.setAttribute('type', type);
 
-    div.appendChild(label);
-    div.appendChild(input);
-    div.appendChild(document.createElement('hr'));
+    li.appendChild(h3);
+    li.appendChild(input);
+    ul.appendChild(li);
   }
-  // set new div height
-  let h = (i + 1) * 80;
-  modal.style['min-height'] = h + 'px';
-  modal.style['max-height'] = h + 'px';
-  // done creating form, show modal
-  modal.style.display = 'block';
+
+  switch_visibility('param_section');
 }
 
-
 // Check if param form input is valid. If it is, try to call relative service
-function validate_param_form (form)
+function validate_param_section (form)
 {
-  console.log('validate form ...');
-
+  // form -> ul
+  let ul = document.getElementById('param_form').children[0];
   let param = {};
 
-  for (let i = 0; i < form.elements.length -2; i++)
+  // subtract two to form to avoid count last two buttons
+  for (let i = 0; i < form.elements.length - 2; i++)
   {
     // if current element is an input tag
     if (isNaN(form.elements[i].value))
@@ -114,8 +120,8 @@ function validate_param_form (form)
   // call service
   call_service(
     cache.ros,
-    form.getAttribute('servicename'),
-    form.getAttribute('servicetype'),
+    form.getAttribute('service_name'),
+    form.getAttribute('service_type'),
     param,
     (result) => {
       console.log('service called successfully!');
@@ -130,16 +136,19 @@ function validate_param_form (form)
   // clear service param modal
   form.removeAttribute('servicename');
   form.removeAttribute('servicetype');
-  cancel_param_form(form);
+  clear_param_section();
+
 }
 
 // cancel service request
-function cancel_param_form (form)
+function clear_param_section ()
 {
-  toggle_visibility('service_param');
-  document.getElementById('param_container').innerHTML = '';
+  toggle_visibility('param_section', 'none');
+  // param_section -> header
+  document.getElementById('param_section').children[0] = '';
+  // form -> ul
+  document.getElementById('param_form').children[0].innerHTML = '';
 }
-
 
 // TODO: docstring
 function call_service (ros, name, type, params, success_cb, error_cb)
@@ -168,12 +177,10 @@ function launch_service (event)
   // retrive service type and params by name
   cache.ros.getServiceType(event.target.innerHTML, (type) => {
     cache.ros.getServiceRequestDetails(type, (typeDetails) => {
-      cancel_param_form();
-      build_params_form(event.target.innerHTML, typeDetails.typedefs[0]);    
+      clear_param_section();
+      build_param_section(event.target.innerHTML, typeDetails.typedefs[0]);    
     });
   });
-
-  toggle_visibility('service_param');
 }
 
 function update_header (address, port)
@@ -405,5 +412,5 @@ window.onload = function ()
   toggle_visibility('running', 'none');
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
-  toggle_visibility('service_param', 'none');
+  toggle_visibility('param_section', 'none');
 }
