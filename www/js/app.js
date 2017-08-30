@@ -209,6 +209,25 @@ function update_header (address, port)
   header.innerHTML += '<p>connected to <b>' + address +
                      '</b> on port <b>' + port + '</b></p>';
 
+  let refresh = document.createElement('button');
+  refresh.innerHTML = 'refresh';
+  refresh.addEventListener('click', () => {
+      switch_visibility(controls);
+
+      cache.packages = undefined;
+      cache.nodes = undefined;
+
+      document.getElementById('running').children[0].innerHTML = '';
+      document.getElementById('logs').children[0].innerHTML = '';
+      document.getElementById('packages').children[0].innerHTML = '';
+      
+      update_available_packages(cache.ros);
+      update_available_nodes(cache.ros);
+    }
+  );
+
+  header.appendChild(refresh);
+
   // hide connection form
   toggle_visibility('connection', 'none');
 }
@@ -239,10 +258,12 @@ function update_sublist (curr, parent, id, fun)
   parent.appendChild(sub);
 }
 
-function update_available_packages (ros)
+function update_list_packages (ros)
 {
   if (cache && cache.packages !== undefined)
   {
+        console.log('update_available_packages...');
+
     for (let i = 0; i < cache.packages.length; i++)
     {
       let li = document.createElement('li');
@@ -250,7 +271,7 @@ function update_available_packages (ros)
 
       h4.innerHTML = cache.packages[i].name;
 
-      h4.addEventListener('click', function (event) {
+      h4.addEventListener('click', (event) => {
         let parent = event.target.parentNode;
 
         if (cache.packages[i].nodes !== undefined) {
@@ -284,10 +305,12 @@ function update_available_packages (ros)
   }
 }
 
-function update_available_nodes (ros)
+function update_list_nodes (ros)
 {
+
   if (cache && cache.nodes !== undefined)
   {
+    console.log('update_available_nodes...');
     for (let i = 0; i < cache.nodes.length; i++)
     {
       let li = document.createElement('li');
@@ -295,7 +318,7 @@ function update_available_nodes (ros)
 
       h4.innerHTML = cache.nodes[i].name;
 
-      h4.addEventListener('click', function (event) {
+      h4.addEventListener('click', (event) => {
         let parent = event.target.parentNode;
 
         if (cache.nodes[i].services !== undefined)
@@ -356,7 +379,55 @@ function connect_to_ros (data)
     toggle_visibility('controls', 'block');
 
     // get available packages if not already stored in cache
-    if (cache.packages === undefined)
+    update_available_packages(ros);
+
+    // setup subscription for rosout
+    rosout_subscription(ros);
+
+    // get all running nodes on remote host
+    update_available_nodes(ros);
+  }); // on connection
+}
+
+window.onload = function ()
+{
+  // setup initial page state
+  toggle_visibility('connection', 'block');
+  toggle_visibility('controls', 'none');
+  toggle_visibility('running', 'none');
+  toggle_visibility('logs', 'none');
+  toggle_visibility('packages', 'none');
+  toggle_visibility('param_section', 'none');
+}
+
+// fill cache with available nodes
+function update_available_nodes (ros)
+{
+  // get all running nodes on remote host
+    if (cache.nodes === undefined)
+    {
+      // get all running nodes on remote host
+      ros.getNodes((data) => {
+        cache.nodes = [];
+
+        for (let i = 0; i < data.length; i++)
+        {
+          cache.nodes.push({
+            name: data[i],
+            services: undefined
+          });
+        }
+        // manually trigger nodes list view update
+        if (data.length >= 1 && data[0] !== '')
+          update_list_nodes(ros);
+      });
+    }
+}
+
+// fill cache with available packages
+function update_available_packages (ros)
+{
+  if (cache.packages === undefined)
     {
       call_service(
         ros, '/pack_list', 'west_tools/PackList', {},
@@ -371,16 +442,19 @@ function connect_to_ros (data)
           }
           // manually trigger packages list view update
           if (result.pack_list.length >= 1 && result.pack_list[0] !== '')
-            update_available_packages(ros);
+            update_list_packages(ros);
         },
         (error) =>{
           console.log('pack_list:  ' + error);
         }
       );
     }
+}
 
-    // setup subscription for rosout
-    let rosout = new ROSLIB.Topic({
+// subcrive to rosout topic
+function rosout_subscription (ros)
+{
+  let rosout = new ROSLIB.Topic({
       ros: ros,
       name: '/rosout',
       messageType: 'rosgraph_msgs/Log'
@@ -398,36 +472,4 @@ function connect_to_ros (data)
       // append to list (first child of logs section)
       document.getElementById('logs').children[0].appendChild(li);
     });
-
-    // get all running nodes on remote host
-    if (cache.nodes === undefined)
-    {
-      // get all running nodes on remote host
-      ros.getNodes((data) => {
-        cache.nodes = [];
-
-        for (let i = 0; i < data.length; i++)
-        {
-          cache.nodes.push({
-            name: data[i],
-            services: undefined
-          });
-        }
-        // manually trigger nodes list view update
-        if (data.length >= 1 && data[0] !== '')
-          update_available_nodes(ros);
-      });
-    }
-  }); // on connection
-}
-
-window.onload = function ()
-{
-  // setup initial page state
-  toggle_visibility('connection', 'block');
-  toggle_visibility('controls', 'none');
-  toggle_visibility('running', 'none');
-  toggle_visibility('logs', 'none');
-  toggle_visibility('packages', 'none');
-  toggle_visibility('param_section', 'none');
 }
