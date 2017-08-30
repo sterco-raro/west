@@ -1,6 +1,7 @@
 // cache object to store remote calls output
 var cache = { ros: undefined, packages: undefined, nodes: undefined };
 
+// set or toggle visibility to the section identified by id
 function toggle_visibility (id, status)
 {
   let element = document.getElementById(id);
@@ -21,6 +22,7 @@ function toggle_visibility (id, status)
     element.style.display = 'none';
 }
 
+// set visibility to one section at a time
 function switch_visibility (id)
 {
   // hide all section
@@ -30,6 +32,18 @@ function switch_visibility (id)
   toggle_visibility('param_section', 'none');
   // display only selected section
   toggle_visibility(id, 'block');
+}
+
+// simple snackbar with given message
+function show_snackbar (message)
+{
+  // get the snackbar div
+  snackbar = document.getElementById('snackbar');
+  snackbar.innerHTML = message;
+  // add the 'show' class to div
+  snackbar.className = 'show';
+  // after 5 seconds, remove the show class from div
+  setTimeout( () => { snackbar.className = ''; }, 5000);
 }
 
 // Check if form input is valid. If it is, try to connect to ros
@@ -124,11 +138,11 @@ function validate_param_section (form)
     form.getAttribute('service_type'),
     param,
     (result) => {
-      console.log('service called successfully!');
+      show_snackbar('service called successfully!');
       console.log(result);
     },
     (error) => {
-      console.log('service NOT called!');
+      show_snackbar('service NOT called!');
       console.log(error);
     }
   );
@@ -137,7 +151,6 @@ function validate_param_section (form)
   form.removeAttribute('servicename');
   form.removeAttribute('servicetype');
   clear_param_section();
-
 }
 
 // cancel service request
@@ -171,18 +184,22 @@ function launch_node (event)
 }
 
 // callback of service click
-function launch_service (event)
+function launch_service_builder (ros)
 {
-  console.log('launching ' + event.target.innerHTML + ' service ...');
-  // retrive service type and params by name
-  cache.ros.getServiceType(event.target.innerHTML, (type) => {
-    cache.ros.getServiceRequestDetails(type, (typeDetails) => {
-      clear_param_section();
-      build_param_section(event.target.innerHTML, typeDetails.typedefs[0]);    
+  return function (event)
+  {
+    console.log('launching ' + event.target.innerHTML + ' service ...');
+    // retrive service type and params by name
+    ros.getServiceType(event.target.innerHTML, (type) => {
+      ros.getServiceRequestDetails(type, (typeDetails) => {
+        clear_param_section();
+        build_param_section(event.target.innerHTML, typeDetails.typedefs[0]);    
+      });
     });
-  });
+  };
 }
 
+// create a simple html header
 function update_header (address, port)
 {
   let header = document.getElementsByTagName('header')[0];
@@ -196,6 +213,7 @@ function update_header (address, port)
   toggle_visibility('connection', 'none');
 }
 
+// create drop down list
 function update_sublist (curr, parent, id, fun)
 {
   // don't create sublists if no nodes are available
@@ -244,7 +262,7 @@ function update_available_packages (ros)
           call_service(ros,
             '/node_list', 'west_tools/NodeList',
             { pack: cache.packages[i].name },
-            function (result) {
+            (result) => {
               cache.packages[i].nodes = [];
               for (let j = 0; j < result.node_list.length; j++) {
                 cache.packages[i].nodes.push(result.node_list[j]);
@@ -253,7 +271,7 @@ function update_available_packages (ros)
               if (result.node_list.length >= 1 && result.node_list[0] !== '')
                 update_sublist(cache.packages[i].nodes, parent, cache.packages[i].name + '_nodes', launch_node);
             },
-            function (error) {
+            (error) => {
               console.log('node_list:  ' + error);
             }
           );
@@ -290,7 +308,7 @@ function update_available_nodes (ros)
           call_service(ros,
             '/service_list', 'west_tools/ServiceList',
             { node: cache.nodes[i].name },
-            function (result) {
+            (result) => {
               cache.nodes[i].services = [];
               for (let j = 0; j < result.service_list.length; j++) {
                 cache.nodes[i].services.push(result.service_list[j]);
@@ -301,10 +319,10 @@ function update_available_nodes (ros)
                   cache.nodes[i].services,
                   parent,
                   cache.nodes[i].name + '_services',
-                  launch_service
+                  launch_service_builder(ros)
                 );
             },
-            function (error) {
+            (error) => {
               console.log('service_list:  ' + error);
             }
           );
@@ -342,7 +360,7 @@ function connect_to_ros (data)
     {
       call_service(
         ros, '/pack_list', 'west_tools/PackList', {},
-        function (result) {
+        (result) =>{
           cache.packages = [];
           for (let i = 0; i < result.pack_list.length; i++)
           {
@@ -352,11 +370,10 @@ function connect_to_ros (data)
             });
           }
           // manually trigger packages list view update
-          if (result.pack_list.length >= 1 && result.pack_list[0] !== ''
-            )
+          if (result.pack_list.length >= 1 && result.pack_list[0] !== '')
             update_available_packages(ros);
         },
-        function (error) {
+        (error) =>{
           console.log('pack_list:  ' + error);
         }
       );
