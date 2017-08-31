@@ -53,6 +53,12 @@ def handle_service_list (req):
 	# now @services is a list that contains node related services
 	return ServiceListResponse(services)
 
+def handle_launch_node (req):
+	#
+	# cmd = []
+
+	return req.pack != '' && req.node != ''
+
 if __name__ == '__main__':
 	
 	print '\n--- Welcome to West tools server ---\n'
@@ -62,6 +68,7 @@ if __name__ == '__main__':
 	rospy.Service('pack_list', PackList, handle_pack_list)
 	rospy.Service('node_list', NodeList, handle_node_list)
 	rospy.Service('service_list', ServiceList, handle_service_list)
+	rospy.Service('launch_node', LaunchNode, handle_launch_node)
 
-	print 'Available services \n\t /pack_list \n\t /node_list <package> \n\t /service_list <node>'
+	print 'Available services \n\t /pack_list \n\t /node_list <package> \n\t /service_list <node> \n\t /launch_node <node>'
 	rospy.spin()
