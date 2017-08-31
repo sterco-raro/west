@@ -46,8 +46,41 @@ function show_snackbar (message)
   setTimeout( () => { snackbar.className = ''; }, 5000);
 }
 
+// create a simple html header
+function build_header (address, port)
+{
+  let header = document.getElementsByTagName('header')[0];
+
+  // set title and some info about remote host
+  header.innerHTML = '<h2>west</h2>'
+  header.innerHTML += '<p>connected to <b>' + address +
+                     '</b> on port <b>' + port + '</b></p>';
+
+  let refresh = document.createElement('button');
+  refresh.innerHTML = 'refresh';
+  refresh.addEventListener('click', () => {
+      switch_visibility(controls);
+
+      cache.packages = undefined;
+      cache.nodes = undefined;
+
+      document.getElementById('running').children[0].innerHTML = '';
+      //document.getElementById('logs').children[0].innerHTML = '';
+      document.getElementById('packages').children[0].innerHTML = '';
+      
+      update_available_packages(cache.ros);
+      update_available_nodes(cache.ros);
+    }
+  );
+
+  header.appendChild(refresh);
+
+  // hide connection form
+  toggle_visibility('connection', 'none');
+}
+
 // Check if form input is valid. If it is, try to connect to ros
-function validate (form)
+function validate_connection (form)
 {
   let conn_data = {};
 
@@ -59,7 +92,7 @@ function validate (form)
 
   if (conn_data.address && conn_data.port)
   {
-    update_header(conn_data.address, conn_data.port);
+    build_header(conn_data.address, conn_data.port);
     connect_to_ros(conn_data);
   }
 }
@@ -180,6 +213,7 @@ function call_service (ros, name, type, params, success_cb, error_cb)
 // TODO: launch new node from west backend
 function launch_node (event)
 {
+  //
   console.log('launching ' + event.target.innerHTML + ' ...');
 }
 
@@ -199,41 +233,28 @@ function launch_service_builder (ros)
   };
 }
 
-// create a simple html header
-function update_header (address, port)
+// create primary list
+function update_list (ros, parent, list, listener)
 {
-  let header = document.getElementsByTagName('header')[0];
+  console.log('update_available_nodes...');
+  for (let i = 0; i < list.length; i++)
+  {
+    let li = document.createElement('li');
+    let h4 = document.createElement('h4');
 
-  // set title and some info about remote host
-  header.innerHTML = '<h2>west</h2>'
-  header.innerHTML += '<p>connected to <b>' + address +
-                     '</b> on port <b>' + port + '</b></p>';
+    h4.innerHTML = list[i].name;
 
-  let refresh = document.createElement('button');
-  refresh.innerHTML = 'refresh';
-  refresh.addEventListener('click', () => {
-      switch_visibility(controls);
+    h4.addEventListener('click', (event) => {
+      listener(ros, event.target.parentNode, list[i]);
+    });
 
-      cache.packages = undefined;
-      cache.nodes = undefined;
-
-      document.getElementById('running').children[0].innerHTML = '';
-      document.getElementById('logs').children[0].innerHTML = '';
-      document.getElementById('packages').children[0].innerHTML = '';
-      
-      update_available_packages(cache.ros);
-      update_available_nodes(cache.ros);
-    }
-  );
-
-  header.appendChild(refresh);
-
-  // hide connection form
-  toggle_visibility('connection', 'none');
+    li.appendChild(h4);
+    parent.appendChild(li);
+  }
 }
 
 // create drop down list
-function update_sublist (curr, parent, id, fun)
+function update_sublist (curr, parent, id, listener)
 {
   // don't create sublists if no nodes are available
   if (curr[0] === "") return;
@@ -250,7 +271,7 @@ function update_sublist (curr, parent, id, fun)
 
     h5.innerHTML = curr[i];
     // for each element set onclick event
-    h5.addEventListener('click', fun);
+    h5.addEventListener('click', listener);
     sub_el.appendChild(h5);
     sub.appendChild(sub_el);
   }
@@ -258,104 +279,161 @@ function update_sublist (curr, parent, id, fun)
   parent.appendChild(sub);
 }
 
-function update_list_packages (ros)
+// fill cache with available packages
+function update_available_packages (ros)
 {
-  if (cache && cache.packages !== undefined)
+  if (cache.packages === undefined)
   {
-        console.log('update_available_packages...');
-
-    for (let i = 0; i < cache.packages.length; i++)
-    {
-      let li = document.createElement('li');
-      let h4 = document.createElement('h4');
-
-      h4.innerHTML = cache.packages[i].name;
-
-      h4.addEventListener('click', (event) => {
-        let parent = event.target.parentNode;
-
-        if (cache.packages[i].nodes !== undefined) {
-          toggle_visibility(cache.packages[i].name + '_nodes');
+    call_service(
+        ros, '/pack_list', 'west_tools/PackList', {},
+        (result) =>{
+          cache.packages = [];
+          for (let i = 0; i < result.pack_list.length; i++)
+          {
+            cache.packages.push(
+            {
+              name: result.pack_list[i],
+              nodes: undefined
+            });
+          }
+          // manually trigger packages list view update
+          if (result.pack_list.length >= 1 && result.pack_list[0] !== '')
+          { 
+            update_list(
+              ros,
+              document.getElementById('packages').children[0],
+              cache.packages,
+              list_packages_listener
+            );
+          }
+        },
+        (error) =>{
+          console.log('pack_list:  ' + error);
         }
-        else
-        {
-          // get nodes list for current package
-          call_service(ros,
-            '/node_list', 'west_tools/NodeList',
-            { pack: cache.packages[i].name },
-            (result) => {
-              cache.packages[i].nodes = [];
-              for (let j = 0; j < result.node_list.length; j++) {
-                cache.packages[i].nodes.push(result.node_list[j]);
-              }
-              // trigger list view update
-              if (result.node_list.length >= 1 && result.node_list[0] !== '')
-                update_sublist(cache.packages[i].nodes, parent, cache.packages[i].name + '_nodes', launch_node);
-            },
-            (error) => {
-              console.log('node_list:  ' + error);
-            }
-          );
-        }
-      });
-
-      li.appendChild(h4);
-      document.getElementById('packages').children[0].appendChild(li);
-    }
+    );
   }
 }
 
-function update_list_nodes (ros)
+// fill cache with available nodes
+function update_available_nodes (ros)
 {
-
-  if (cache && cache.nodes !== undefined)
+  // get all running nodes on remote host
+  if (cache.nodes === undefined)
   {
-    console.log('update_available_nodes...');
-    for (let i = 0; i < cache.nodes.length; i++)
-    {
-      let li = document.createElement('li');
-      let h4 = document.createElement('h4');
+    // get all running nodes on remote host
+    ros.getNodes((data) => {
+        cache.nodes = [];
 
-      h4.innerHTML = cache.nodes[i].name;
-
-      h4.addEventListener('click', (event) => {
-        let parent = event.target.parentNode;
-
-        if (cache.nodes[i].services !== undefined)
+        for (let i = 0; i < data.length; i++)
         {
-          toggle_visibility(cache.nodes[i].name + '_services');
+          cache.nodes.push(
+          {
+            name: data[i],
+            services: undefined
+          });
         }
-        else
-        {
-          // get services list from current node
-          call_service(ros,
-            '/service_list', 'west_tools/ServiceList',
-            { node: cache.nodes[i].name },
-            (result) => {
-              cache.nodes[i].services = [];
-              for (let j = 0; j < result.service_list.length; j++) {
-                cache.nodes[i].services.push(result.service_list[j]);
-              }
-              //trigger list view update
-              if (result.service_list.length >= 1 && result.service_list[0] !== '')
-                update_sublist(
-                  cache.nodes[i].services,
-                  parent,
-                  cache.nodes[i].name + '_services',
-                  launch_service_builder(ros)
-                );
-            },
-            (error) => {
-              console.log('service_list:  ' + error);
-            }
+        // manually trigger nodes list view update
+        if (data.length >= 1 && data[0] !== '')
+        { 
+          update_list(
+            ros,
+            document.getElementById('running').children[0],
+            cache.nodes,
+            list_nodes_listener
           );
         }
-      });
-
-      li.appendChild(h4);
-      document.getElementById('running').children[0].appendChild(li);
-    }
+    });
   }
+}
+
+// retrive, with service call, all nodes available for the pack
+function list_packages_listener (ros, parent, package)
+{
+  if (package.nodes !== undefined) {
+    toggle_visibility(package.name + '_nodes');
+  }
+  else
+  {
+    // get nodes list for current package
+    call_service(ros,
+      '/node_list', 'west_tools/NodeList',
+      { pack: package.name },
+      (result) => {
+        package.nodes = [];
+        for (let j = 0; j < result.node_list.length; j++) {
+          package.nodes.push(result.node_list[j]);
+        }
+        // trigger list view update
+        if (result.node_list.length >= 1 && result.node_list[0] !== '')
+          update_sublist(
+            package.nodes,
+            parent,
+            package.name + '_nodes',
+            launch_node
+          );
+      },
+      (error) => {
+        console.log('node_list:  ' + error);
+      }
+    );
+  }
+}
+
+// retrive, with service call, all services available for the node
+function list_nodes_listener (ros, parent, node)
+{
+  if (node.services !== undefined)
+  {
+    toggle_visibility(node.name + '_services');
+  }
+  else
+  {
+    // get services list from current node
+    call_service(ros,
+      '/service_list', 'west_tools/ServiceList',
+      { node: node.name },
+      (result) => {
+        node.services = [];
+        for (let j = 0; j < result.service_list.length; j++) {
+          node.services.push(result.service_list[j]);
+        }
+        //trigger list view update
+        if (result.service_list.length >= 1 && result.service_list[0] !== '')
+          update_sublist(
+            node.services,
+            parent,
+            node.name + '_services',
+            launch_service_builder(ros)
+          );
+      },
+      (error) => {
+        console.log('service_list:  ' + error);
+      }
+    );
+  }
+}
+
+// subcrive to rosout topic
+function rosout_subscription (ros)
+{
+  let rosout = new ROSLIB.Topic({
+      ros: ros,
+      name: '/rosout',
+      messageType: 'rosgraph_msgs/Log'
+    });
+    rosout.subscribe(function (message)
+    {
+      // create a new subscription entry
+      let li = document.createElement('li');
+
+      // left: topic name
+      li.innerHTML = '<span style="float: left;"><b>/rosout</b>:</span>';
+      // right: message
+      li.innerHTML += '</span style="float: right;">' + message.msg + '</span>';
+
+      // append to list (first child of logs section)
+      document.getElementById('logs').children[0].appendChild(li);
+    });
 }
 
 function connect_to_ros (data)
@@ -398,78 +476,4 @@ window.onload = function ()
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
   toggle_visibility('param_section', 'none');
-}
-
-// fill cache with available nodes
-function update_available_nodes (ros)
-{
-  // get all running nodes on remote host
-    if (cache.nodes === undefined)
-    {
-      // get all running nodes on remote host
-      ros.getNodes((data) => {
-        cache.nodes = [];
-
-        for (let i = 0; i < data.length; i++)
-        {
-          cache.nodes.push({
-            name: data[i],
-            services: undefined
-          });
-        }
-        // manually trigger nodes list view update
-        if (data.length >= 1 && data[0] !== '')
-          update_list_nodes(ros);
-      });
-    }
-}
-
-// fill cache with available packages
-function update_available_packages (ros)
-{
-  if (cache.packages === undefined)
-    {
-      call_service(
-        ros, '/pack_list', 'west_tools/PackList', {},
-        (result) =>{
-          cache.packages = [];
-          for (let i = 0; i < result.pack_list.length; i++)
-          {
-            cache.packages.push({
-              name: result.pack_list[i],
-              nodes: undefined
-            });
-          }
-          // manually trigger packages list view update
-          if (result.pack_list.length >= 1 && result.pack_list[0] !== '')
-            update_list_packages(ros);
-        },
-        (error) =>{
-          console.log('pack_list:  ' + error);
-        }
-      );
-    }
-}
-
-// subcrive to rosout topic
-function rosout_subscription (ros)
-{
-  let rosout = new ROSLIB.Topic({
-      ros: ros,
-      name: '/rosout',
-      messageType: 'rosgraph_msgs/Log'
-    });
-    rosout.subscribe(function (message)
-    {
-      // create a new subscription entry
-      let li = document.createElement('li');
-
-      // left: topic name
-      li.innerHTML = '<span style="float: left;"><b>/rosout</b>:</span>';
-      // right: message
-      li.innerHTML += '</span style="float: right;">' + message.msg + '</span>';
-
-      // append to list (first child of logs section)
-      document.getElementById('logs').children[0].appendChild(li);
-    });
 }
