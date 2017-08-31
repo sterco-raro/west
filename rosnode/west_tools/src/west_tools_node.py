@@ -32,7 +32,7 @@ def handle_node_list (req):
 	nodes = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
 	nodes = (nodes.split('\n')); # obtain an array of string
 	# only check on actual lists, not the empty set
-	if len(nodes) > 1:
+	if len(nodes) > 0:
 		# take the last string that follow last '/' char
 		nodes = map(lambda x: x.rsplit('/', 1)[1], nodes)
 		
@@ -46,7 +46,7 @@ def handle_service_list (req):
 	services = ((services.split('Services: \n')[1]).split('\n\n')[0]).split('\n')
 	
 	# only check on actual lists, not the empty set
-	if len(services) > 1:
+	if len(services) > 0:
 		# take the string that follow each '* ' char
 		services = map(lambda x: x.rsplit('* ')[1], services)
 	

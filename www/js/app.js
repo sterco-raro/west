@@ -373,6 +373,7 @@ function list_packages_listener (ros, parent, package)
           );
       },
       (error) => {
+        show_snackbar(package.name + ' package does NOT contain available node!');
         console.log('node_list:  ' + error);
       }
     );
