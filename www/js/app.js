@@ -63,6 +63,20 @@ function show_snackbar (message)
   setTimeout( () => { snackbar.className = ''; }, 5000);
 }
 
+// rotate list arrow
+function toggle_arrow (arrow)
+{
+  if(arrow.getAttribute('class') === 'fa fa-arrow-right w3-display-topleft')
+  {
+    arrow.setAttribute('class', 'fa fa-arrow-down w3-display-topleft');
+  }
+  else
+  {
+    arrow.setAttribute('class', 'fa fa-arrow-right w3-display-topleft');
+
+  }
+}
+
 // create a simple html header
 function build_header (address, port)
 {
@@ -267,19 +281,25 @@ function update_list (ros, parent, list, listener, kill_listener)
   {
     let li = document.createElement('li');
     let h4 = document.createElement('h4');
+    let arrow = document.createElement('i');
 
+    li.setAttribute('class', 'w3-display-container');
     h4.innerHTML = list[i].name;
+    arrow.setAttribute('class','fa fa-arrow-right w3-display-topleft');
 
-    h4.addEventListener('click', (event) => {
+    arrow.addEventListener('click', (event) => {
+      toggle_arrow(arrow);
       listener(ros, event.target.parentNode, list[i]);
     });
 
     li.appendChild(h4);
+    li.appendChild(arrow);
     
     if (kill_listener)
     {
-      let kill = document.createElement('h5');
-      kill.innerHTML = 'X';
+      let kill = document.createElement('i');
+      //kill.innerHTML = '&times';
+      kill.setAttribute('class', 'fa fa-close w3-display-topright');
       kill.addEventListener('click', (event) => {
         kill_listener(ros, event.target.parentNode, list[i]);
       });
@@ -290,7 +310,7 @@ function update_list (ros, parent, list, listener, kill_listener)
 }
 
 // create drop down list
-function update_sublist (curr, parent,name, id, listener)
+function update_sublist (curr, parent, name, id, listener)
 {
   // don't create sublists if no nodes are available
   if (curr[0] === "") return;
@@ -299,17 +319,18 @@ function update_sublist (curr, parent,name, id, listener)
   let sub = document.createElement('ul');
   sub.id = id;
   sub.setAttribute('name', name);
+  sub.setAttribute('class','w3-ul w3-card-4');
   sub.style.display = 'inline-block';
 
   for (let i = 0; i < curr.length; i++)
   {
     let sub_el = document.createElement('li');
-    let h5 = document.createElement('h5');
+    let h6 = document.createElement('h6');
 
-    h5.innerHTML = curr[i];
+    h6.innerHTML = curr[i];
     // for each element set onclick event
-    h5.addEventListener('click', listener);
-    sub_el.appendChild(h5);
+    h6.addEventListener('click', listener);
+    sub_el.appendChild(h6);
     sub.appendChild(sub_el);
   }
   // append sublist to first level list
@@ -387,7 +408,8 @@ function update_available_nodes (ros)
 // retrive, with service call, all nodes available for the pack
 function list_packages_listener (ros, parent, package)
 {
-  if (package.nodes !== undefined) {
+  if (package.nodes !== undefined)
+  {
     toggle_visibility(package.name + '_nodes');
   }
   else
