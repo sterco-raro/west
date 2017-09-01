@@ -34,6 +34,23 @@ function switch_visibility (id)
   toggle_visibility(id, 'block');
 }
 
+//
+function refresh_page (timeout)
+{
+  switch_visibility('controls');
+  setTimeout(() => {
+    cache.packages = undefined;
+    cache.nodes = undefined;
+
+    document.getElementById('running').children[0].innerHTML = '';
+    document.getElementById('packages').children[0].innerHTML = '';
+
+    update_available_packages(cache.ros);
+    update_available_nodes(cache.ros);
+  }, timeout);
+
+}
+
 // simple snackbar with given message
 function show_snackbar (message)
 {
@@ -58,20 +75,7 @@ function build_header (address, port)
 
   let refresh = document.createElement('button');
   refresh.innerHTML = 'refresh';
-  refresh.addEventListener('click', () => {
-      switch_visibility(controls);
-
-      cache.packages = undefined;
-      cache.nodes = undefined;
-
-      document.getElementById('running').children[0].innerHTML = '';
-      //document.getElementById('logs').children[0].innerHTML = '';
-      document.getElementById('packages').children[0].innerHTML = '';
-      
-      update_available_packages(cache.ros);
-      update_available_nodes(cache.ros);
-    }
-  );
+  refresh.addEventListener('click', refresh_page);
 
   header.appendChild(refresh);
 
@@ -210,7 +214,7 @@ function call_service (ros, name, type, params, success_cb, error_cb)
   srv.callService(request, success_cb, error_cb);
 }
 
-// TODO: launch new node from west backend
+// TODO: docstring
 function launch_node_builder (ros)
 {
   return function (event) 
@@ -221,15 +225,22 @@ function launch_node_builder (ros)
       ros,
       '/run_node',
       '/west_tools/RunNode',
-      { pack: event.target.parentNode.parentNode.getAttribute('name'),
-        node: event.target.innerHTML },
+      {
+        pack: event.target.parentNode.parentNode.getAttribute('name'),
+        node: event.target.innerHTML
+      },
       (result) => {
-        console.log('yeah');
+        show_snackbar('node launched successfully');
+        console.log(result);
       },
       (error) => {
-        console.log('miao');
+        show_snackbar('node NOT launched!');
+        console.log(error);
       }
     );
+
+    // finally, after one second, refresh app page
+    refresh_page(1000);
   }
 }
 
@@ -250,7 +261,7 @@ function launch_service_builder (ros)
 }
 
 // create primary list
-function update_list (ros, parent, list, listener)
+function update_list (ros, parent, list, listener, kill_listener)
 {
   for (let i = 0; i < list.length; i++)
   {
@@ -264,6 +275,16 @@ function update_list (ros, parent, list, listener)
     });
 
     li.appendChild(h4);
+    
+    if (kill_listener)
+    {
+      let kill = document.createElement('h5');
+      kill.innerHTML = 'X';
+      kill.addEventListener('click', (event) => {
+        kill_listener(ros, event.target.parentNode, list[i]);
+      });
+      li.appendChild(kill);
+    }
     parent.appendChild(li);
   }
 }
@@ -355,7 +376,8 @@ function update_available_nodes (ros)
             ros,
             document.getElementById('running').children[0],
             cache.nodes,
-            list_nodes_listener
+            list_nodes_listener,
+            kill_node_listener
           );
         }
     });
@@ -430,6 +452,29 @@ function list_nodes_listener (ros, parent, node)
       }
     );
   }
+}
+
+// TODO: docstring
+function kill_node_listener (ros, parent, node)
+{
+  // call service
+  call_service(
+    ros,
+    '/kill_node',
+    '/west_tools/KillNode',
+    { node: node.name },
+    (result) => {
+      show_snackbar('node killed successfully');
+      console.log(result);
+    },
+    (error) => {
+      show_snackbar('node NOT killed!');
+      console.log(error);
+    }
+  );
+
+  // finally, after one second, refresh app page
+  refresh_page(1000);
 }
 
 // subcrive to rosout topic
