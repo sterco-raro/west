@@ -15,7 +15,8 @@ add_service_files(
   PackList.srv
   NodeList.srv
   ServiceList.srv
-  LaunchNode.srv
+  RunNode.srv
+  KillNode.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

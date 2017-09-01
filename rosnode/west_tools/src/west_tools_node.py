@@ -53,11 +53,19 @@ def handle_service_list (req):
 	# now @services is a list that contains node related services
 	return ServiceListResponse(services)
 
-def handle_launch_node (req):
-	#
-	# cmd = []
+def handle_run_node (req):
+	# use 'rosrun' command with package and nodes given in service request
+	cmd = ['rosrun', req.pack, ros.node]
+	Popen (cmd, stdout = PIPE, stderr = PIPE)
 
-	return req.pack != '' && req.node != ''
+	return true
+
+def handle_kill_node (req):
+	# use 'rosnode kill' command to kill requested node, ros takes care to do this dirty job
+	cmd = ['rosnode', 'kill', ros.node]
+	Popen (cmd, stdout = PIPE, stderr = PIPE)
+
+	return true
 
 if __name__ == '__main__':
 	
@@ -68,7 +76,8 @@ if __name__ == '__main__':
 	rospy.Service('pack_list', PackList, handle_pack_list)
 	rospy.Service('node_list', NodeList, handle_node_list)
 	rospy.Service('service_list', ServiceList, handle_service_list)
-	rospy.Service('launch_node', LaunchNode, handle_launch_node)
+	rospy.Service('run_node', RunNode, handle_run_node)
+	rospy.Service('kill_node', KillNode, handle_kill_node)
 
-	print 'Available services \n\t /pack_list \n\t /node_list <package> \n\t /service_list <node> \n\t /launch_node <node>'
+	print 'Available services\n\t /pack_list\n\t /node_list <package>\n\t /service_list <node>\n\t /run_node <node>\n\t /kill_node <node>'
 	rospy.spin()
