@@ -211,10 +211,26 @@ function call_service (ros, name, type, params, success_cb, error_cb)
 }
 
 // TODO: launch new node from west backend
-function launch_node (event)
+function launch_node_builder (ros)
 {
-  //
-  console.log('launching ' + event.target.innerHTML + ' ...');
+  return function (event) 
+  {
+    console.log('launching ' + event.target.innerHTML + ' ...');
+    // call service to launch new node
+    call_service(
+      ros,
+      '/run_node',
+      '/west_tools/RunNode',
+      { pack: event.target.parentNode.parentNode.getAttribute('name'),
+        node: event.target.innerHTML },
+      (result) => {
+        console.log('yeah');
+      },
+      (error) => {
+        console.log('miao');
+      }
+    );
+  }
 }
 
 // callback of service click
@@ -236,7 +252,6 @@ function launch_service_builder (ros)
 // create primary list
 function update_list (ros, parent, list, listener)
 {
-  console.log('update_available_nodes...');
   for (let i = 0; i < list.length; i++)
   {
     let li = document.createElement('li');
@@ -254,7 +269,7 @@ function update_list (ros, parent, list, listener)
 }
 
 // create drop down list
-function update_sublist (curr, parent, id, listener)
+function update_sublist (curr, parent,name, id, listener)
 {
   // don't create sublists if no nodes are available
   if (curr[0] === "") return;
@@ -262,6 +277,7 @@ function update_sublist (curr, parent, id, listener)
   // build sublist from cache
   let sub = document.createElement('ul');
   sub.id = id;
+  sub.setAttribute('name', name);
   sub.style.display = 'inline-block';
 
   for (let i = 0; i < curr.length; i++)
@@ -368,8 +384,9 @@ function list_packages_listener (ros, parent, package)
           update_sublist(
             package.nodes,
             parent,
+            package.name,
             package.name + '_nodes',
-            launch_node
+            launch_node_builder(ros)
           );
       },
       (error) => {
@@ -403,6 +420,7 @@ function list_nodes_listener (ros, parent, node)
           update_sublist(
             node.services,
             parent,
+            node.name,
             node.name + '_services',
             launch_service_builder(ros)
           );

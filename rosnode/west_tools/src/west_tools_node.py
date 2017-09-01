@@ -55,17 +55,17 @@ def handle_service_list (req):
 
 def handle_run_node (req):
 	# use 'rosrun' command with package and nodes given in service request
-	cmd = ['rosrun', req.pack, ros.node]
+	cmd = ['rosrun', req.pack, req.node]
 	Popen (cmd, stdout = PIPE, stderr = PIPE)
 
-	return true
+	return 1
 
 def handle_kill_node (req):
 	# use 'rosnode kill' command to kill requested node, ros takes care to do this dirty job
-	cmd = ['rosnode', 'kill', ros.node]
+	cmd = ['rosnode', 'kill', req.node]
 	Popen (cmd, stdout = PIPE, stderr = PIPE)
 
-	return true
+	return 1
 
 if __name__ == '__main__':
 	
