@@ -66,13 +66,13 @@ function show_snackbar (message)
 // rotate list arrow
 function toggle_arrow (arrow)
 {
-  if(arrow.getAttribute('class') === 'fa fa-arrow-right w3-display-topleft')
+  if(arrow.getAttribute('class') === 'fa fa-arrow-right w3-large w3-display-topleft')
   {
-    arrow.setAttribute('class', 'fa fa-arrow-down w3-display-topleft');
+    arrow.setAttribute('class', 'fa fa-arrow-down w3-large w3-display-topleft');
   }
   else
   {
-    arrow.setAttribute('class', 'fa fa-arrow-right w3-display-topleft');
+    arrow.setAttribute('class', 'fa fa-arrow-right w3-large w3-display-topleft');
 
   }
 }
@@ -283,9 +283,9 @@ function update_list (ros, parent, list, listener, kill_listener)
     let h4 = document.createElement('h4');
     let arrow = document.createElement('i');
 
-    li.setAttribute('class', 'w3-display-container');
+    li.setAttribute('class', 'w3-display-container w3-bar');
     h4.innerHTML = list[i].name;
-    arrow.setAttribute('class','fa fa-arrow-right w3-display-topleft');
+    arrow.setAttribute('class','fa fa-arrow-right w3-large w3-display-topleft');
 
     arrow.addEventListener('click', (event) => {
       toggle_arrow(arrow);
@@ -325,6 +325,8 @@ function update_sublist (curr, parent, name, id, listener)
   for (let i = 0; i < curr.length; i++)
   {
     let sub_el = document.createElement('li');
+
+    sub_el.setAttribute('class', 'w3-bar');
     let h6 = document.createElement('h6');
 
     h6.innerHTML = curr[i];
