@@ -1,7 +1,7 @@
 # todo
 
 	[x] circular list for subscription
-	[] refresh button?
+	[x] refresh button?
 	[] service result view
 	[x] multiple sublist
 

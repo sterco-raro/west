@@ -37,6 +37,9 @@ function switch_visibility (id)
 //
 function refresh_page (timeout)
 {
+  //
+  refresh = document.getElementById('refresh');
+  refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-large w3-spin');
   switch_visibility('controls');
   setTimeout(() => {
     cache.packages = undefined;
@@ -47,6 +50,7 @@ function refresh_page (timeout)
 
     update_available_packages(cache.ros);
     update_available_nodes(cache.ros);
+    refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-large');
   }, timeout);
 
 }
@@ -64,16 +68,27 @@ function show_snackbar (message)
 }
 
 // rotate list arrow
-function toggle_arrow (arrow)
+function toggle_arrow (arrow, direction, disable)
 {
-  if(arrow.getAttribute('class') === 'fa fa-arrow-right w3-large w3-display-topleft')
+  if (disable)
   {
-    arrow.setAttribute('class', 'fa fa-arrow-down w3-large w3-display-topleft');
-  }
-  else
-  {
+    arrow.setAttribute('disable', disable);
     arrow.setAttribute('class', 'fa fa-arrow-right w3-large w3-display-topleft');
-
+  }
+  if (arrow.getAttribute('disable') === null || arrow.getAttribute('disable') !== 'true')
+  {
+    if (direction)
+    {
+      arrow.setAttribute('class', 'fa fa-arrow-' + direction + ' w3-large w3-display-topleft');
+    }
+    else if(arrow.getAttribute('class') === 'fa fa-arrow-right w3-large w3-display-topleft')
+    {
+      arrow.setAttribute('class', 'fa fa-arrow-down w3-large w3-display-topleft');
+    }
+    else
+    {
+      arrow.setAttribute('class', 'fa fa-arrow-right w3-large w3-display-topleft');
+    }
   }
 }
 
@@ -87,8 +102,10 @@ function build_header (address, port)
   header.innerHTML += '<p>connected to <b>' + address +
                      '</b> on port <b>' + port + '</b></p>';
 
-  let refresh = document.createElement('button');
-  refresh.innerHTML = 'refresh';
+  let refresh = document.createElement('i');
+  refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-large');
+  refresh.setAttribute('id', 'refresh');
+  //refresh.innerHTML = 'refresh';
   refresh.addEventListener('click', refresh_page);
 
   header.appendChild(refresh);
@@ -291,6 +308,7 @@ function update_list (ros, parent, list, listener, kill_listener)
     arrow.setAttribute('class','fa fa-arrow-right w3-large w3-display-topleft');
 
     arrow.addEventListener('click', (event) => {
+      toggle_arrow(arrow);
       listener(ros, event.target.parentNode, arrow, list[i]);
     });
 
@@ -312,17 +330,20 @@ function update_list (ros, parent, list, listener, kill_listener)
 }
 
 // create drop down list
-function update_sublist (curr, parent, name, id, listener)
+function update_sublist (curr, parent, name, id, arrow, listener)
 {
   // don't create sublists if no nodes are available
   if (curr[0] === "") return;
 
   // build sublist from cache
   let sub = document.createElement('ul');
+    // append sublist to first level list
+  parent.appendChild(sub);
   sub.id = id;
   sub.setAttribute('name', name);
   sub.setAttribute('class','w3-ul w3-card-4');
-  sub.style.display = 'inline-block';
+  sub.style.display = 'block';
+  toggle_arrow(arrow, 'down');
 
   for (let i = 0; i < curr.length; i++)
   {
@@ -338,7 +359,7 @@ function update_sublist (curr, parent, name, id, listener)
     sub.appendChild(sub_el);
   }
   // append sublist to first level list
-  parent.appendChild(sub);
+  //parent.appendChild(sub);
 }
 
 // fill cache with available packages
@@ -415,7 +436,7 @@ function list_packages_listener (ros, parent, arrow, package)
   // check if operation has alrwedy been performed
   if (package.executed || package.nodes !== undefined)
   {
-    toggle_arrow(arrow);
+    //toggle_arrow(arrow);
     toggle_visibility(package.name + '_nodes');
   }
   else
@@ -438,11 +459,13 @@ function list_packages_listener (ros, parent, arrow, package)
             parent,
             package.name,
             package.name + '_nodes',
+            arrow,
             launch_node_builder(ros)
           );
       },
       (error) => {
         show_snackbar(package.name + ' package does NOT contain available node!');
+        toggle_arrow(arrow, 'right', 'true');
         console.log('node_list:  ' + error);
       }
     );
@@ -455,7 +478,7 @@ function list_nodes_listener (ros, parent, arrow, node)
   // check if operation has alrwedy been performed
   if (node.executed || node.services !== undefined)
   {
-    toggle_arrow(arrow);
+    //toggle_arrow(arrow);
     toggle_visibility(node.name + '_services');
   }
   else
@@ -478,6 +501,7 @@ function list_nodes_listener (ros, parent, arrow, node)
             parent,
             node.name,
             node.name + '_services',
+            arrow,
             launch_service_builder(ros)
           );
       },
@@ -486,6 +510,7 @@ function list_nodes_listener (ros, parent, arrow, node)
       }
     );
   }
+
 }
 
 // TODO: docstring
