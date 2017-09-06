@@ -283,13 +283,15 @@ function update_list (ros, parent, list, listener, kill_listener)
     let h4 = document.createElement('h4');
     let arrow = document.createElement('i');
 
+    // for each element of list inizialize flag to perform the operation one time
+    list[i].executed = false;
+
     li.setAttribute('class', 'w3-display-container w3-bar');
     h4.innerHTML = list[i].name;
     arrow.setAttribute('class','fa fa-arrow-right w3-large w3-display-topleft');
 
     arrow.addEventListener('click', (event) => {
-      toggle_arrow(arrow);
-      listener(ros, event.target.parentNode, list[i]);
+      listener(ros, event.target.parentNode, arrow, list[i]);
     });
 
     li.appendChild(h4);
@@ -358,7 +360,7 @@ function update_available_packages (ros)
           }
           // manually trigger packages list view update
           if (result.pack_list.length >= 1 && result.pack_list[0] !== '')
-          { 
+          {
             update_list(
               ros,
               document.getElementById('packages').children[0],
@@ -408,14 +410,18 @@ function update_available_nodes (ros)
 }
 
 // retrive, with service call, all nodes available for the pack
-function list_packages_listener (ros, parent, package)
+function list_packages_listener (ros, parent, arrow, package)
 {
-  if (package.nodes !== undefined)
+  // check if operation has alrwedy been performed
+  if (package.executed || package.nodes !== undefined)
   {
+    toggle_arrow(arrow);
     toggle_visibility(package.name + '_nodes');
   }
   else
   {
+    // switch flag to true and perform for the first (and last) time the operation
+    package.executed = true;
     // get nodes list for current package
     call_service(ros,
       '/node_list', 'west_tools/NodeList',
@@ -444,14 +450,18 @@ function list_packages_listener (ros, parent, package)
 }
 
 // retrive, with service call, all services available for the node
-function list_nodes_listener (ros, parent, node)
+function list_nodes_listener (ros, parent, arrow, node)
 {
-  if (node.services !== undefined)
+  // check if operation has alrwedy been performed
+  if (node.executed || node.services !== undefined)
   {
+    toggle_arrow(arrow);
     toggle_visibility(node.name + '_services');
   }
   else
   {
+    // switch flag to true and perform for the first (and last) time the operation
+    node.executed = true;
     // get services list from current node
     call_service(ros,
       '/service_list', 'west_tools/ServiceList',
