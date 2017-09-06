@@ -39,7 +39,7 @@ function refresh_page (timeout)
 {
   //
   refresh = document.getElementById('refresh');
-  refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-large w3-spin');
+  refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge w3-spin');
   switch_visibility('controls');
   setTimeout(() => {
     cache.packages = undefined;
@@ -50,7 +50,7 @@ function refresh_page (timeout)
 
     update_available_packages(cache.ros);
     update_available_nodes(cache.ros);
-    refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-large');
+    refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge');
   }, timeout);
 
 }
@@ -102,13 +102,10 @@ function build_header (address, port)
   header.innerHTML += '<p>connected to <b>' + address +
                      '</b> on port <b>' + port + '</b></p>';
 
-  let refresh = document.createElement('i');
-  refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-large');
-  refresh.setAttribute('id', 'refresh');
-  //refresh.innerHTML = 'refresh';
+  let refresh = document.getElementById('refresh');
   refresh.addEventListener('click', refresh_page);
 
-  header.appendChild(refresh);
+  //header.appendChild(refresh);
 
   // hide connection form
   toggle_visibility('connection', 'none');
@@ -319,7 +316,7 @@ function update_list (ros, parent, list, listener, kill_listener)
     {
       let kill = document.createElement('i');
       //kill.innerHTML = '&times';
-      kill.setAttribute('class', 'fa fa-close w3-display-topright');
+      kill.setAttribute('class', 'fa fa-close w3-large w3-display-topright');
       kill.addEventListener('click', (event) => {
         kill_listener(ros, event.target.parentNode, list[i]);
       });
@@ -578,6 +575,7 @@ function connect_to_ros (data)
   ros.on('connection', () => {
     // show controls on connection
     toggle_visibility('controls', 'block');
+    toggle_visibility('refresh', 'block');
 
     // get available packages if not already stored in cache
     update_available_packages(ros);
@@ -599,4 +597,5 @@ window.onload = function ()
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
   toggle_visibility('param_section', 'none');
+  toggle_visibility('refresh', 'none');
 }
