@@ -37,9 +37,10 @@ function switch_visibility (id)
 //
 function refresh_page (timeout)
 {
-  //
+  // animate refresh button 
   refresh = document.getElementById('refresh');
   refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge w3-spin');
+
   switch_visibility('controls');
   setTimeout(() => {
     cache.packages = undefined;
@@ -50,6 +51,7 @@ function refresh_page (timeout)
 
     update_available_packages(cache.ros);
     update_available_nodes(cache.ros);
+    // stop animation
     refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge');
   }, timeout);
 
@@ -300,11 +302,11 @@ function update_list (ros, parent, list, listener, kill_listener)
     // for each element of list inizialize flag to perform the operation one time
     list[i].executed = false;
 
-    li.setAttribute('class', 'w3-display-container w3-bar');
+    li.setAttribute('class', 'w3-display-container w3-bar w3-hover-cyan');
     h4.innerHTML = list[i].name;
     arrow.setAttribute('class','fa fa-arrow-right w3-large w3-display-topleft');
 
-    arrow.addEventListener('click', (event) => {
+    h4.addEventListener('click', (event) => {
       toggle_arrow(arrow);
       listener(ros, event.target.parentNode, arrow, list[i]);
     });
@@ -346,7 +348,7 @@ function update_sublist (curr, parent, name, id, arrow, listener)
   {
     let sub_el = document.createElement('li');
 
-    sub_el.setAttribute('class', 'w3-bar');
+    sub_el.setAttribute('class', 'w3-bar w3-hover-white');
     let h6 = document.createElement('h6');
 
     h6.innerHTML = curr[i];
