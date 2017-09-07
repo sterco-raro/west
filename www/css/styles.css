@@ -37,6 +37,11 @@ i
   display: none;
 }
 
+#app_page
+{
+  display: none;
+}
+
 /* input focus feedback using box-shadow */
 input
 {

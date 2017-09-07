@@ -197,8 +197,8 @@ function validate_param_section (form)
   let ul = document.getElementById('param_form').children[0];
   let param = {};
 
-  // subtract two to form to avoid count last two buttons
-  for (let i = 0; i < form.elements.length - 2; i++)
+  // subtract one to form to avoid count last once buttons
+  for (let i = 0; i < form.elements.length - 1; i++)
   {
     // if current element is an input tag
     if (isNaN(form.elements[i].value))
@@ -206,6 +206,9 @@ function validate_param_section (form)
     else
       param[form.elements[i].name] = Number(form.elements[i].value);
   }
+
+  console.log('param');
+  console.log(param);
 
   // call service
   call_service(
@@ -280,7 +283,7 @@ function clear_param_section ()
   // form -> ul
   document.getElementById('param_section').children[0] = '';
   // result
-  document.getElementById('result').innerHTML = '';
+  document.getElementById('result').innerHTML = '<h2> Result : </h2>';
 }
 
 // TODO: docstring
@@ -631,6 +634,7 @@ function connect_to_ros (data)
 
   ros.on('connection', () => {
     // show controls on connection
+    toggle_visibility('app_page', 'block');
     toggle_visibility('controls', 'block');
     toggle_visibility('refresh', 'inline-block');
 
@@ -649,6 +653,7 @@ window.onload = function ()
 {
   // setup initial page state
   toggle_visibility('connection', 'block');
+  //toggle_visibility('app_page', 'none');
   toggle_visibility('controls', 'none');
   toggle_visibility('running', 'none');
   toggle_visibility('logs', 'none');
