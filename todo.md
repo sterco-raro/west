@@ -2,7 +2,7 @@
 
 	[x] circular list for subscription
 	[x] refresh button?
-	[] service result view
+	[x] service result view
 	[x] multiple sublist
 
 ## extra

@@ -30,6 +30,7 @@ function switch_visibility (id)
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
   toggle_visibility('param_section', 'none');
+  //toggle_visibility('back_service', 'none');
   // display only selected section
   toggle_visibility(id, 'block');
 }
@@ -42,6 +43,7 @@ function refresh_page (timeout)
   refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge w3-spin');
 
   switch_visibility('controls');
+  toggle_visibility('back_service', 'none');
   setTimeout(() => {
     cache.packages = undefined;
     cache.nodes = undefined;
@@ -51,6 +53,8 @@ function refresh_page (timeout)
 
     update_available_packages(cache.ros);
     update_available_nodes(cache.ros);
+
+    clear_param_section();
     // stop animation
     refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge');
   }, timeout);
@@ -132,8 +136,11 @@ function validate_connection (form)
 }
 
 // build service call parameters form with request details
-function build_param_section (name, details)
+function build_param_section (name, details, response)
 {
+  console.log(response);
+  document.getElementById('result').setAttribute('fieldname', response[0]);
+
   let param_section = document.getElementById('param_section');
   // param_section -> header
   let header = param_section.children[0];
@@ -179,6 +186,8 @@ function build_param_section (name, details)
   }
 
   switch_visibility('param_section');
+  document.getElementById('back_service').addEventListener('click', () => { clear_param_section(); });
+  toggle_visibility('back_service', 'inline-block');
 }
 
 // Check if param form input is valid. If it is, try to call relative service
@@ -205,8 +214,43 @@ function validate_param_section (form)
     form.getAttribute('service_type'),
     param,
     (result) => {
-      show_snackbar('service called successfully!');
-      console.log(result);
+      let div = document.getElementById('result');
+      let field = result[div.getAttribute('fieldname')];
+      
+      let p = document.createElement('p');
+
+      switch (typeof field)
+      {
+        case 'object':
+        {
+          for (let i = 0; i < field.length; i++)
+          {
+            let p = document.createElement('p')
+            p.innerHTML = i + ' - [' + field[i].toString() + ']';
+            div.appendChild(p);
+          }
+        } break;
+
+        case 'undefined':
+        {
+          p.innerHTML = 'undefined';
+          div.appendChild(p);
+        } break;
+
+        case 'boolean':
+        {
+          p.innerHTML = 'boolean : ' + field;
+          div.appendChild(p);
+        } break;
+
+        default:
+        {
+          p.innerHTML = field.toString();
+          div.appendChild(p);
+        }
+      }
+
+      toggle_visibility('result');
     },
     (error) => {
       show_snackbar('service NOT called!');
@@ -217,17 +261,26 @@ function validate_param_section (form)
   // clear service param modal
   form.removeAttribute('servicename');
   form.removeAttribute('servicetype');
-  clear_param_section();
+  
+  toggle_visibility('param_form', 'none');
+  toggle_visibility('back_service', 'none');  
 }
 
 // cancel service request
 function clear_param_section ()
 {
   toggle_visibility('param_section', 'none');
+  toggle_visibility('result', 'none');
+  toggle_visibility('param_form', 'block');
+  toggle_visibility('controls', 'block');
+  toggle_visibility('back_service', 'none');
+  
   // param_section -> header
-  document.getElementById('param_section').children[0] = '';
-  // form -> ul
   document.getElementById('param_form').children[0].innerHTML = '';
+  // form -> ul
+  document.getElementById('param_section').children[0] = '';
+  // result
+  document.getElementById('result').innerHTML = '';
 }
 
 // TODO: docstring
@@ -283,8 +336,11 @@ function launch_service_builder (ros)
     // retrive service type and params by name
     ros.getServiceType(event.target.innerHTML, (type) => {
       ros.getServiceRequestDetails(type, (typeDetails) => {
-        clear_param_section();
-        build_param_section(event.target.innerHTML, typeDetails.typedefs[0]);    
+        ros.getServiceResponseDetails(type, (responseDetails) => {
+          clear_param_section();
+          toggle_visibility('controls', 'none');
+          build_param_section(event.target.innerHTML, typeDetails.typedefs[0], responseDetails.typedefs[0].fieldnames);
+        });
       });
     });
   };
@@ -509,7 +565,6 @@ function list_nodes_listener (ros, parent, arrow, node)
       }
     );
   }
-
 }
 
 // TODO: docstring
@@ -577,7 +632,7 @@ function connect_to_ros (data)
   ros.on('connection', () => {
     // show controls on connection
     toggle_visibility('controls', 'block');
-    toggle_visibility('refresh', 'block');
+    toggle_visibility('refresh', 'inline-block');
 
     // get available packages if not already stored in cache
     update_available_packages(ros);
@@ -600,4 +655,5 @@ window.onload = function ()
   toggle_visibility('packages', 'none');
   toggle_visibility('param_section', 'none');
   toggle_visibility('refresh', 'none');
+  toggle_visibility('back_service', 'none');
 }

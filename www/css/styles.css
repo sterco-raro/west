@@ -32,6 +32,11 @@ button
   font-size: 14px;
 }
 
+i
+{
+  display: none;
+}
+
 /* input focus feedback using box-shadow */
 input
 {
@@ -81,6 +86,11 @@ ul ul
 {
   display: none;
   font-size: 12px;
+}
+
+div.scroll {
+  max-height: 300px;
+  overflow: auto;
 }
 
 .container
