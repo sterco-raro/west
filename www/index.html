@@ -48,16 +48,42 @@
     </section>
 
     <div id="app_page">
+
       <section id="controls">
-        <button onclick="switch_visibility('running'); return false;">active nodes</button>
-        <button onclick="switch_visibility('logs'); return false;">subscriptions</button>
-        <button onclick="switch_visibility('packages'); return false;">launch</button>
-        <hr>
-        <br>
+
+        <h4 class="w3-bar-item w3-button inline-block" onclick="switch_controls('running', this); return false;">
+          Active nodes <i class="glyphicon glyphicon-fire w3-xlarge"></i>
+        </h4>
+        
+        <h4 class="w3-bar-item w3-button inline-block" onclick="switch_controls('logs', this); return false;">
+          Subscription <i class="glyphicon glyphicon-leaf w3-xlarge"></i>
+        </h4>
+        
+        <h4 class="w3-bar-item w3-button inline-block" onclick="switch_controls('packages', this); return false;">
+          Launch <i class="glyphicon glyphicon-plane w3-xlarge"></i>
+        </h4>
+
       </section>
 
       <section id="running">
-        <ul class="w3-ul w3-card-4 scroll"></ul>
+
+        <span id="running_list" class="block">
+          <ul class="w3-ul w3-card-4 scroll"></ul>
+        </span>
+
+        <span id="param_section">
+          <header></header>
+          <form id="param_form">
+            <ul class="w3-ul w3-card-4"></ul>
+            <br>
+            <br>
+            <button type="submit" onclick="validate_param_section(this.form); return false;"> call </button>  
+          </form>
+          <div id="result" class="scroll">
+            <h2> Result : </h2>
+          </div>
+        </span>
+
         <hr>
         <br>
       </section>
@@ -74,25 +100,12 @@
         <br>
       </section>
 
-      <section id="param_section">
-        <header></header>
-        <form id="param_form">
-          <ul class="w3-ul w3-card-4"></ul>
-          <br>
-          <br>
-          <button type="submit" onclick="validate_param_section(this.form); return false;"> call </button>  
-        </form>
-        <div id="result" class="scroll">
-          <h2> Result : </h2>
-        </div>
-        <hr>
-        <br>
-      </section>
 
       <div id="snackbar"></div>
 
       <i id="back_service" class="glyphicon glyphicon-menu-left w3-xlarge"></i>
       <i id="refresh" class="glyphicon glyphicon-refresh w3-xlarge"></i>
+
     </div> <!-- id="app_page" -->
   </div>
 

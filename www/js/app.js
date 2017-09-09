@@ -1,7 +1,9 @@
 // cache object to store remote calls output
-var cache = { ros: undefined, packages: undefined, nodes: undefined };
+var cache = { ros_call: undefined, packages: undefined, nodes: undefined };
 
-// set or toggle visibility to the section identified by id
+/* ------------------------------
+  - Set or toggle visibility to the tag identified by id
+  ------------------------------ */
 function toggle_visibility (id, status)
 {
   let element = document.getElementById(id);
@@ -22,46 +24,63 @@ function toggle_visibility (id, status)
     element.style.display = 'none';
 }
 
-// set visibility to one section at a time
-function switch_visibility (id)
+/* ------------------------------
+  - Without params the section with id as 'running', 'logs' and 'packages'
+  are hidden, and each controls button are unselected
+  (with class 'w3-cyan' is consider selected)
+  - With @id set on 'block' the display value to tag identified by id
+  - With @button set button as selected
+  ------------------------------ */
+function switch_controls(id, button)
 {
-  // hide all section
   toggle_visibility('running', 'none');
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
-  toggle_visibility('param_section', 'none');
-  //toggle_visibility('back_service', 'none');
-  // display only selected section
-  toggle_visibility(id, 'block');
+  
+  controls = document.getElementById('controls').children;
+  for (let i = 0; i < controls.length; i++)
+  {
+    controls[i].classList.remove('w3-cyan');
+  }
+  
+  // With @id
+  if(id)
+  {
+    toggle_visibility(id, 'block');
+  }
+
+  // With @button
+  if (button)
+  {
+    button.classList.add('w3-cyan');
+  }
 }
 
-//
+/* ------------------------------
+  - Hide all section except control and update list of available packages and running nodes
+  ------------------------------ */
 function refresh_page (timeout)
 {
   // animate refresh button 
   refresh = document.getElementById('refresh');
   refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge w3-spin');
 
-  switch_visibility('controls');
+  switch_controls('controls');
   toggle_visibility('back_service', 'none');
   setTimeout(() => {
-    cache.packages = undefined;
-    cache.nodes = undefined;
 
-    document.getElementById('running').children[0].innerHTML = '';
-    document.getElementById('packages').children[0].innerHTML = '';
-
-    update_available_packages(cache.ros);
-    update_available_nodes(cache.ros);
+    cache.packages();
+    cache.nodes();
 
     clear_param_section();
     // stop animation
     refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge');
   }, timeout);
-
 }
 
-// simple snackbar with given message
+/* ------------------------------
+  - Simple snackbar with given message
+  ------------------------------ */
 function show_snackbar (message)
 {
   // get the snackbar div
@@ -185,7 +204,8 @@ function build_param_section (name, details, response)
     ul.appendChild(li);
   }
 
-  switch_visibility('param_section');
+  toggle_visibility('param_section', 'block');
+  toggle_visibility('running_list', 'none');
   document.getElementById('back_service').addEventListener('click', () => { clear_param_section(); });
   toggle_visibility('back_service', 'inline-block');
 }
@@ -211,8 +231,7 @@ function validate_param_section (form)
   console.log(param);
 
   // call service
-  call_service(
-    cache.ros,
+  cache.ros_call(
     form.getAttribute('service_name'),
     form.getAttribute('service_type'),
     param,
@@ -277,6 +296,7 @@ function clear_param_section ()
   toggle_visibility('param_form', 'block');
   toggle_visibility('controls', 'block');
   toggle_visibility('back_service', 'none');
+  toggle_visibility('running_list', 'block');
   
   // param_section -> header
   document.getElementById('param_form').children[0].innerHTML = '';
@@ -298,6 +318,23 @@ function call_service (ros, name, type, params, success_cb, error_cb)
   let request = new ROSLIB.ServiceRequest(params);
 
   srv.callService(request, success_cb, error_cb);
+}
+
+//
+function call_service_builder (ros)
+{
+  return function (name, type, params, success_cb, error_cb)
+  {
+    let srv = new ROSLIB.Service({
+      ros: ros,
+      name: name,
+      serviceType: type
+    });
+
+    let request = new ROSLIB.ServiceRequest(params);
+
+    srv.callService(request, success_cb, error_cb);
+  }
 }
 
 // TODO: docstring
@@ -421,17 +458,20 @@ function update_sublist (curr, parent, name, id, arrow, listener)
 }
 
 // fill cache with available packages
-function update_available_packages (ros)
+function update_available_packages_builder (ros)
 {
-  if (cache.packages === undefined)
-  {
+  return function () {
+    //
+    packages = undefined;
+    document.getElementById('packages').children[0].innerHTML = '';
+  
     call_service(
         ros, '/pack_list', 'west_tools/PackList', {},
         (result) =>{
-          cache.packages = [];
+          packages = [];
           for (let i = 0; i < result.pack_list.length; i++)
           {
-            cache.packages.push(
+            packages.push(
             {
               name: result.pack_list[i],
               nodes: undefined
@@ -443,7 +483,7 @@ function update_available_packages (ros)
             update_list(
               ros,
               document.getElementById('packages').children[0],
-              cache.packages,
+              packages,
               list_packages_listener
             );
           }
@@ -456,18 +496,20 @@ function update_available_packages (ros)
 }
 
 // fill cache with available nodes
-function update_available_nodes (ros)
+function update_available_nodes_builder (ros)
 {
-  // get all running nodes on remote host
-  if (cache.nodes === undefined)
-  {
+  return function () {
+    // get all running nodes on remote host
+    nodes = undefined;
+    document.getElementById('running_list').children[0].innerHTML = '';
+  
     // get all running nodes on remote host
     ros.getNodes((data) => {
-        cache.nodes = [];
-
+        nodes = [];
+  
         for (let i = 0; i < data.length; i++)
         {
-          cache.nodes.push(
+          nodes.push(
           {
             name: data[i],
             services: undefined
@@ -478,8 +520,8 @@ function update_available_nodes (ros)
         { 
           update_list(
             ros,
-            document.getElementById('running').children[0],
-            cache.nodes,
+            document.getElementById('running_list').children[0],
+            nodes,
             list_nodes_listener,
             kill_node_listener
           );
@@ -622,7 +664,7 @@ function connect_to_ros (data)
     url: 'ws://' + data.address + ':' + data.port
   });
   // store ros variable in cache
-  cache.ros = ros;
+  //cache.ros = ros;
 
   ros.on('error', (error) => {
     console.log('connection error: ', error);
@@ -638,14 +680,18 @@ function connect_to_ros (data)
     toggle_visibility('controls', 'block');
     toggle_visibility('refresh', 'inline-block');
 
+    cache.ros_call = call_service_builder(ros);
+
     // get available packages if not already stored in cache
-    update_available_packages(ros);
+    cache.packages = update_available_packages_builder(ros);
+    cache.packages();
 
     // setup subscription for rosout
     rosout_subscription(ros);
 
     // get all running nodes on remote host
-    update_available_nodes(ros);
+    cache.nodes = update_available_nodes_builder(ros);
+    cache.nodes();
   }); // on connection
 }
 

@@ -42,6 +42,14 @@ i
   display: none;
 }
 
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
 /* input focus feedback using box-shadow */
 input
 {
@@ -73,7 +81,10 @@ input[type="number"]
   -moz-appearance: textfield;
 }
 
-/* lists and sublists default style */
+/* ---------------------------------------- */
+/* lists and sublists default style         */
+/* ---------------------------------------- */
+
 ul
 {
   list-style-type: none;
