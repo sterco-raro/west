@@ -96,8 +96,10 @@ function update_available_packages ()
   document.getElementById('packages').children[0].innerHTML = '';
 
   cache.call_service(
-      '/pack_list', 'west_tools/PackList', {},
-      (result) =>{
+    '/pack_list',
+    'west_tools/PackList',
+    {},
+    (result) => {
         packages = [];
         for (let i = 0; i < result.pack_list.length; i++)
         {
@@ -116,11 +118,11 @@ function update_available_packages ()
             list_packages_listener
           );
         }
-      },
-      (error) =>{
+    },
+    (error) => {
         show_snackbar('Couldn\'t retrive available packages');
         console.log('pack_list:  ' + error);
-      }
+    }
   );
 }
 
@@ -181,9 +183,7 @@ function update_list (parent, list, listener, kill_listener)
     li.setAttribute('class', 'w3-display-container w3-bar w3-hover-cyan');
     h4.innerHTML = list[i].name;
 
-    li.addEventListener('click', (event) => {
-      listener(event.target.parentNode, list[i]);
-    });
+    li.addEventListener('click', (event) => { listener(event.target.parentNode, list[i]); } );
 
     li.appendChild(h4);
     
@@ -192,9 +192,7 @@ function update_list (parent, list, listener, kill_listener)
       let kill = document.createElement('i');
       //kill.innerHTML = '&times';
       kill.setAttribute('class', 'fa fa-close w3-large w3-display-topright');
-      kill.addEventListener('click', (event) => {
-        kill_listener(list[i]);
-      });
+      kill.addEventListener('click', (event) => { kill_listener(list[i]); } );
       li.appendChild(kill);
     }
     parent.appendChild(li);
@@ -251,15 +249,18 @@ function list_packages_listener (parent, package)
     package.executed = true;
     // get nodes list for current package
     cache.call_service(
-      '/node_list', 'west_tools/NodeList',
+      '/node_list',
+      'west_tools/NodeList',
       { pack: package.name },
       (result) => {
         package.nodes = [];
-        for (let j = 0; j < result.node_list.length; j++) {
+        for (let j = 0; j < result.node_list.length; j++)
+        {
           package.nodes.push(result.node_list[j]);
         }
         // trigger list view update
         if (result.node_list.length >= 1 && result.node_list[0] !== '')
+        { 
           update_sublist(
             package.nodes,
             parent,
@@ -267,6 +268,7 @@ function list_packages_listener (parent, package)
             package.name + '_nodes',
             cache.launch_node
           );
+        }
       },
       (error) => {
         show_snackbar('Package : ' + package.name + ' does NOT contain available node!');
@@ -292,15 +294,18 @@ function list_nodes_listener (parent, node)
     node.executed = true;
     // get services list from current node
     cache.call_service(
-      '/service_list', 'west_tools/ServiceList',
+      '/service_list',
+      'west_tools/ServiceList',
       { node: node.name },
       (result) => {
         node.services = [];
-        for (let j = 0; j < result.service_list.length; j++) {
+        for (let j = 0; j < result.service_list.length; j++)
+        {
           node.services.push(result.service_list[j]);
         }
         //trigger list view update
         if (result.service_list.length >= 1 && result.service_list[0] !== '')
+        {
           update_sublist(
             node.services,
             parent,
@@ -308,6 +313,7 @@ function list_nodes_listener (parent, node)
             node.name + '_services',
             cache.launch_service
           );
+        } 
       },
       (error) => {
         show_snackbar('Node : ' + node.name + ' does NOT contain available service!');
@@ -340,140 +346,10 @@ function kill_node_listener (node)
   refresh_page(1000);
 }
 
+
 /* ------------------------------------------------------------------------------------------
+  - Param section utility : build, validate, clear
   ------------------------------------------------------------------------------------------ */
-
-
-/* ------------------------------
-  - Set or toggle visibility to the tag identified by id
-  ------------------------------ */
-function toggle_visibility (id, status)
-{
-  let element = document.getElementById(id);
-
-  if (!element)
-    return;
-
-  // if given, set new display value
-  if (status) {
-    element.style.display = status;
-    return;
-  }
-
-  // if not, flip current value between block and none
-  if (!(element.style.display) || element.style.display === 'none')
-    element.style.display = 'block';
-  else if (element.style.display === 'block' || element.style.display === 'inline-block')
-    element.style.display = 'none';
-}
-
-/* ------------------------------
-  - Without params the section with id as 'running', 'logs' and 'packages'
-  are hidden, and each controls button are unselected
-  (with class 'w3-cyan' is consider selected)
-  - With @id set on 'block' the display value to tag identified by id
-  - With @button set button as selected
-  ------------------------------ */
-function switch_controls(id, button)
-{
-  toggle_visibility('running', 'none');
-  toggle_visibility('logs', 'none');
-  toggle_visibility('packages', 'none');
-  
-  controls = document.getElementById('controls').children;
-  for (let i = 0; i < controls.length; i++)
-  {
-    controls[i].classList.remove('w3-cyan');
-  }
-  
-  // With @id
-  if(id)
-  {
-    toggle_visibility(id, 'block');
-  }
-
-  // With @button
-  if (button)
-  {
-    button.classList.add('w3-cyan');
-  }
-}
-
-/* ------------------------------
-  - Hide all section except control and update list of available packages and running nodes
-  ------------------------------ */
-function refresh_page (timeout)
-{
-  // animate refresh button 
-  refresh = document.getElementById('refresh');
-  refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge w3-spin');
-
-  switch_controls('controls');
-  toggle_visibility('back_service', 'none');
-  setTimeout(() => {
-
-    cache.update_packages();
-    cache.update_nodes();
-
-    clear_param_section();
-    // stop animation
-    refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge');
-  }, timeout);
-}
-
-/* ------------------------------
-  - Simple snackbar with given message
-  ------------------------------ */
-function show_snackbar (message)
-{
-  // get the snackbar div
-  snackbar = document.getElementById('snackbar');
-  snackbar.innerHTML = message;
-  // add the 'show' class to div
-  snackbar.className = 'show';
-  // after 5 seconds, remove the show class from div
-  setTimeout( () => { snackbar.className = ''; }, 5000);
-}
-
-/* ------------------------------
-  - Create a simple html header
-  ------------------------------ */
-function build_header (address, port)
-{
-  let header = document.getElementsByTagName('header')[0];
-
-  // set title and some info about remote host
-  header.innerHTML = '<h2>west</h2>'
-  header.innerHTML += '<p>connected to <b>' + address +
-                     '</b> on port <b>' + port + '</b></p>';
-
-  let refresh = document.getElementById('refresh');
-  refresh.addEventListener('click', refresh_page);
-
-  //header.appendChild(refresh);
-
-  // hide connection form
-  toggle_visibility('connection', 'none');
-}
-
-/* ------------------------------
-  - Check if form input is valid. If it is, try to connect to ros
-  ------------------------------ */
-function validate_connection (form)
-{
-  let conn_data = {};
-
-  for (let i = 0; i < form.elements.length; i++)
-  {
-    if (form.elements[i].name && form.elements[i].value)
-      conn_data[form.elements[i].name] = form.elements[i].value;
-  }
-
-  if (conn_data.address && conn_data.port)
-  {    
-    connect_to_ros(conn_data);
-  }
-}
 
 /* ------------------------------
   - Build service call parameters form with request details
@@ -516,7 +392,8 @@ function build_param_section (name, details, response)
     {
       input.setAttribute('type', 'checkbox');
     }
-    else {
+    else
+    {
       input.setAttribute('type', 'number');
       input.setAttribute('step', 'any');
     }
@@ -528,7 +405,6 @@ function build_param_section (name, details, response)
 
   toggle_visibility('param_section', 'block');
   toggle_visibility('running_list', 'none');
-  document.getElementById('back_service').addEventListener('click', () => { clear_param_section(); });
   toggle_visibility('back_service', 'inline-block');
 }
 
@@ -629,6 +505,139 @@ function clear_param_section ()
   document.getElementById('result').children[1].innerHTML = '';
 }
 
+
+/* ------------------------------------------------------------------------------------------
+  - Page managment and effects
+  ------------------------------------------------------------------------------------------ */
+
+/* ------------------------------
+  - Set or toggle visibility to the tag identified by id
+  ------------------------------ */
+function toggle_visibility (id, status)
+{
+  let element = document.getElementById(id);
+
+  if (!element)
+    return;
+
+  // if given, set new display value
+  if (status)
+  {
+    element.style.display = status;
+    return;
+  }
+
+  // if not, flip current value between block and none
+  if (!(element.style.display) || element.style.display === 'none')
+    element.style.display = 'block';
+  else if (element.style.display === 'block' || element.style.display === 'inline-block')
+    element.style.display = 'none';
+}
+
+/* ------------------------------
+  - Without params the section with id as 'running', 'logs' and 'packages'
+  are hidden, and each controls button are unselected
+  (with class 'w3-cyan' is consider selected)
+  - With @id set on 'block' the display value to tag identified by id
+  - With @button set button as selected
+  ------------------------------ */
+function switch_controls(id, button)
+{
+  toggle_visibility('running', 'none');
+  toggle_visibility('logs', 'none');
+  toggle_visibility('packages', 'none');
+  
+  controls = document.getElementById('controls').children;
+  for (let i = 0; i < controls.length; i++)
+    controls[i].classList.remove('w3-cyan');
+  
+  // With @id
+  if(id)
+    toggle_visibility(id, 'block');
+
+  // With @button
+  if (button)
+    button.classList.add('w3-cyan');
+}
+
+/* ------------------------------
+  - Hide all section except control and update list of available packages and running nodes
+  ------------------------------ */
+function refresh_page (timeout)
+{
+  // animate refresh button 
+  refresh = document.getElementById('refresh');
+  refresh.classList.add('w3-spin');
+  //refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge w3-spin');
+
+  clear_param_section();
+  switch_controls('controls');
+
+  setTimeout( () => {
+    cache.update_packages();
+    cache.update_nodes();
+
+    // stop animation
+    refresh.classList.remove('w3-spin');
+    //refresh.setAttribute('class', 'glyphicon glyphicon-refresh w3-xlarge');
+  }, timeout);
+}
+
+/* ------------------------------
+  - Simple snackbar with given message
+  ------------------------------ */
+function show_snackbar (message)
+{
+  // get the snackbar div
+  snackbar = document.getElementById('snackbar');
+  snackbar.innerHTML = message;
+  // add the 'show' class to div
+  snackbar.className = 'show';
+  // after 5 seconds, remove the show class from div
+  setTimeout( () => { snackbar.className = ''; }, 5000);
+}
+
+/* ------------------------------
+  - Create a simple html header and show the new page
+  ------------------------------ */
+function build_app_page (address, port)
+{
+  let header = document.getElementsByTagName('header')[0];
+  console.log(header);
+
+  // set title and some info about remote host
+  header.children[0].innerHTML = 'West'
+  header.children[1].innerHTML = 'connected to <b>' + address + '</b> on port <b>' + port + '</b>';
+
+  // hide connection form
+  toggle_visibility('connection', 'none');
+  // show controls on connection
+  toggle_visibility('app_page', 'block');
+  toggle_visibility('controls', 'block');
+  toggle_visibility('refresh', 'inline-block');
+}
+
+/* ------------------------------
+  - Check if form input is valid. If it is, try to connect to ros
+  ------------------------------ */
+function validate_connection (form)
+{
+  let conn_data = {};
+
+  for (let i = 0; i < form.elements.length; i++)
+  {
+    if (form.elements[i].name && form.elements[i].value)
+      conn_data[form.elements[i].name] = form.elements[i].value;
+  }
+
+  if (conn_data.address && conn_data.port)
+    connect_to_ros(conn_data);
+}
+
+/* ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------ */
+
+
 /* ------------------------------
   - Subscrive to rosout topic
   ------------------------------ */
@@ -639,19 +648,19 @@ function rosout_subscription (ros)
       name: '/rosout',
       messageType: 'rosgraph_msgs/Log'
     });
-    rosout.subscribe(function (message)
-    {
-      // create a new subscription entry
-      let li = document.createElement('li');
+    
+  rosout.subscribe( (message) => {
+    // create a new subscription entry
+    let li = document.createElement('li');
 
-      // left: topic name
-      li.innerHTML = '<span style="float: left;"><b>/rosout</b>:</span>';
-      // right: message
-      li.innerHTML += '</span style="float: right;">' + message.msg + '</span>';
+    // left: topic name
+    li.innerHTML = '<span style="float: left;"><b>/rosout</b>:</span>';
+    // right: message
+    li.innerHTML += '</span style="float: right;">' + message.msg + '</span>';
 
-      // append to list (first child of logs section)
-      document.getElementById('logs').children[0].appendChild(li);
-    });
+    // append to list (first child of logs section)
+    document.getElementById('logs').children[0].appendChild(li);
+  });
 }
 
 /* ------------------------------
@@ -674,11 +683,7 @@ function connect_to_ros (data)
 
   ros.on('connection', () => {
     // show connection page
-    build_header( data.address, data.port);
-    // show controls on connection
-    toggle_visibility('app_page', 'block');
-    toggle_visibility('controls', 'block');
-    toggle_visibility('refresh', 'inline-block');
+    build_app_page( data.address, data.port);
 
     // fill the cache with partially applied method on ros
     cache.call_service = call_service_builder(ros);
