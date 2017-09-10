@@ -148,8 +148,7 @@ function validate_connection (form)
   }
 
   if (conn_data.address && conn_data.port)
-  {
-    build_header(conn_data.address, conn_data.port);
+  {    
     connect_to_ros(conn_data);
   }
 }
@@ -158,17 +157,17 @@ function validate_connection (form)
 function build_param_section (name, details, response)
 {
   console.log(response);
-  document.getElementById('result').setAttribute('fieldname', response[0]);
+  document.getElementById('result').children[1].setAttribute('fieldname', response[0]);
 
   let param_section = document.getElementById('param_section');
-  // param_section -> header
-  let header = param_section.children[0];
+  // param_section -> h2
+  let h2 = param_section.children[0];
 
   let form = document.getElementById('param_form');
   // form -> ul
   let ul = form.children[0];
 
-  header.innerHTML = 'Service name : ' + name + '<br>Service type : ' + details.type;
+  h2.innerHTML = 'Service name : ' + name + '<br>Service type : ' + details.type;
 
   form.setAttribute('service_name', name);
   form.setAttribute('service_details', details.type);
@@ -236,7 +235,7 @@ function validate_param_section (form)
     form.getAttribute('service_type'),
     param,
     (result) => {
-      let div = document.getElementById('result');
+      let div = document.getElementById('result').children[1];
       let field = result[div.getAttribute('fieldname')];
       
       let p = document.createElement('p');
@@ -299,11 +298,11 @@ function clear_param_section ()
   toggle_visibility('running_list', 'block');
   
   // param_section -> header
-  document.getElementById('param_form').children[0].innerHTML = '';
+  document.getElementById('param_section').children[0].innerHTML = '';
   // form -> ul
-  document.getElementById('param_section').children[0] = '';
+  document.getElementById('param_form').children[0].innerHTML = '';
   // result
-  document.getElementById('result').innerHTML = '<h2> Result : </h2>';
+  document.getElementById('result').children[1].innerHTML = '';
 }
 
 // TODO: docstring
@@ -675,6 +674,8 @@ function connect_to_ros (data)
   }); // on close
 
   ros.on('connection', () => {
+    // show connection page
+    build_header( data.address, data.port);
     // show controls on connection
     toggle_visibility('app_page', 'block');
     toggle_visibility('controls', 'block');
@@ -699,12 +700,18 @@ window.onload = function ()
 {
   // setup initial page state
   toggle_visibility('connection', 'block');
-  //toggle_visibility('app_page', 'none');
+  // hide all section of app
+  toggle_visibility('app_page', 'none');
   toggle_visibility('controls', 'none');
   toggle_visibility('running', 'none');
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
-  toggle_visibility('param_section', 'none');
+  // hide button
   toggle_visibility('refresh', 'none');
   toggle_visibility('back_service', 'none');
+
+  // id running
+  toggle_visibility('running_list', 'block');
+  toggle_visibility('param_section', 'none');
+  toggle_visibility('result', 'none');
 }
