@@ -35,10 +35,10 @@
 
     <section id="connection">
       <form>
-        <input type="text" name="address" placeholder="remote machine ip" maxlength="20" required>
+        <input type="text" name="address" placeholder="remote machine ip" maxlength="20" value="127.0.0.1" required>
         <br>
         <br>
-        <input type="number" name="port" placeholder="listening port" maxlength="20" required>
+        <input type="number" name="port" placeholder="listening port" maxlength="20" value="9090" required>
         <br>
         <br>
         <button type="submit" onclick="validate_connection(this.form); return false;">connect</button>
@@ -51,15 +51,15 @@
 
       <section id="controls">
 
-        <h4 class="w3-bar-item w3-button inline-block" onclick="switch_controls('running', this); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('running', this); return false;">
           Active nodes <i class="glyphicon glyphicon-fire w3-xlarge"></i>
         </h4>
         
-        <h4 class="w3-bar-item w3-button inline-block" onclick="switch_controls('logs', this); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('logs', this); return false;">
           Subscription <i class="glyphicon glyphicon-leaf w3-xlarge"></i>
         </h4>
         
-        <h4 class="w3-bar-item w3-button inline-block" onclick="switch_controls('packages', this); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('packages', this); return false;">
           Launch <i class="glyphicon glyphicon-plane w3-xlarge"></i>
         </h4>
 

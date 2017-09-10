@@ -8,6 +8,11 @@
   bg:      #eceff4
 */
 
+
+/* ------------------------------
+  - General features
+  ------------------------------ */
+
 body
 {
   background-color: #eceff4;
@@ -37,7 +42,7 @@ i
   display: none;
 }
 
-#app_page
+.none
 {
   display: none;
 }
@@ -49,8 +54,13 @@ i
 .inline-block {
   display: inline-block;
 }
+/* End general features*/
 
-/* input focus feedback using box-shadow */
+
+/* ------------------------------
+  - Input focus feedback using box-shadow
+  ------------------------------ */
+
 input
 {
   font-family: monospace;
@@ -80,10 +90,12 @@ input[type="number"]
 {
   -moz-appearance: textfield;
 }
+/* End input */
 
-/* ---------------------------------------- */
-/* lists and sublists default style         */
-/* ---------------------------------------- */
+
+/* ------------------------------
+  - Lists and sublists default style
+  ------------------------------ */
 
 ul
 {
@@ -93,22 +105,15 @@ ul
 }
 
 ul.scroll {
-    /*width: 500px;*/
     max-height: 300px;
     overflow: auto;
 }
+/* End list and sublist */
 
-ul ul
-{
-  display: none;
-  font-size: 12px;
-}
 
-div.scroll {
-  max-height: 300px;
-  overflow: auto;
-}
-
+/* ------------------------------
+  - Container class
+  ------------------------------ */
 .container
 {
   margin: 10px auto;
@@ -130,8 +135,12 @@ and (min-width : 481px)
   .container
   { width: 400px; }
 }
+/* End container */
 
-/* The snackbar - position it at the bottom and in the middle of the screen */
+/* ------------------------------
+  - The snackbar - position it at the bottom and in the middle of the screen
+  ------------------------------ */
+
 #snackbar {
     visibility: hidden; /* Hidden by default. Visible on click */
     min-width: 250px; /* Set a default minimum width */

@@ -1,5 +1,348 @@
-// cache object to store remote calls output
-var cache = { ros_call: undefined, packages: undefined, nodes: undefined };
+/* ------------------------------
+  - To avoid exposing the ros variable, we maintain a cache that contains
+  a number of features. These methods are partially applied, that is, they
+  are functions that use the ros variable but do not require it as an argument.
+  ------------------------------ */
+  var cache = {
+    call_service: undefined,
+    launch_node: undefined,
+    launch_service: undefined,
+    update_packages: undefined,
+    update_nodes: undefined
+  };
+
+/* ------------------------------------------------------------------------------------------
+  - Partially applied method on @ros, return a function with which you can call a service.
+  ------------------------------------------------------------------------------------------ */
+
+/* ------------------------------
+  -Result function parameters are :
+    name : service name
+    type : service type
+    params : service parameters
+    success_cb : function to call if service call was successfull
+    error_cb : function to call if service call has not been successfull
+  ------------------------------ */
+function call_service_builder (ros)
+{
+  return function (name, type, params, success_cb, error_cb)
+  {
+    let srv = new ROSLIB.Service({
+      ros: ros,
+      name: name,
+      serviceType: type
+    });
+
+    let request = new ROSLIB.ServiceRequest(params);
+
+    srv.callService(request, success_cb, error_cb);
+  }
+}
+
+/* ------------------------------
+  - Callback of service click
+  - TODO: docstring
+  ------------------------------ */
+function launch_node (event)
+{
+  // call service to launch new node
+  cache.call_service(
+    '/run_node',
+    '/west_tools/RunNode',
+    {
+      pack: event.target.parentNode.parentNode.getAttribute('name'),
+      node: event.target.innerHTML
+    },
+    (result) => {
+      show_snackbar('Node : ' + event.target.innerHTML + ' launched successfully');
+    },
+    (error) => {
+      show_snackbar('Node : ' + event.target.innerHTML + ' node NOT launched!');
+      console.log(error);
+    }
+  );
+
+  // finally, after one second, refresh app page
+  refresh_page(1000);
+}
+
+/* ------------------------------
+  - Callback builder of service click, return a function like 'function (event) {}'
+  - TODO: docstring
+  ------------------------------ */
+function launch_service_builder (ros)
+{
+  return function (event)
+  {
+    // retrive service type and params by name
+    ros.getServiceType(event.target.innerHTML, (type) => {
+      ros.getServiceRequestDetails(type, (typeDetails) => {
+        ros.getServiceResponseDetails(type, (responseDetails) => {
+          clear_param_section();
+          toggle_visibility('controls', 'none');
+          build_param_section(event.target.innerHTML, typeDetails.typedefs[0], responseDetails.typedefs[0].fieldnames);
+        });
+      });
+    });
+  };
+}
+
+/* ------------------------------
+  - TODO: docstring
+  ------------------------------ */
+function update_available_packages ()
+{
+  packages = undefined;
+  document.getElementById('packages').children[0].innerHTML = '';
+
+  cache.call_service(
+      '/pack_list', 'west_tools/PackList', {},
+      (result) =>{
+        packages = [];
+        for (let i = 0; i < result.pack_list.length; i++)
+        {
+          packages.push(
+          {
+            name: result.pack_list[i],
+            nodes: undefined
+          });
+        }
+        // manually trigger packages list view update
+        if (result.pack_list.length >= 1 && result.pack_list[0] !== '')
+        {
+          update_list(
+            document.getElementById('packages').children[0],
+            packages,
+            list_packages_listener
+          );
+        }
+      },
+      (error) =>{
+        show_snackbar('Couldn\'t retrive available packages');
+        console.log('pack_list:  ' + error);
+      }
+  );
+}
+
+/* ------------------------------
+  - TODO: docstring
+  ------------------------------ */
+function update_available_nodes_builder (ros)
+{
+  return function () {
+    // get all running nodes on remote host
+    nodes = undefined;
+    document.getElementById('running_list').children[0].innerHTML = '';
+  
+    // get all running nodes on remote host
+    ros.getNodes((data) => {
+        nodes = [];
+  
+        for (let i = 0; i < data.length; i++)
+        {
+          nodes.push(
+          {
+            name: data[i],
+            services: undefined
+          });
+        }
+        // manually trigger nodes list view update
+        if (data.length >= 1 && data[0] !== '')
+        { 
+          update_list(
+            document.getElementById('running_list').children[0],
+            nodes,
+            list_nodes_listener,
+            kill_node_listener
+          );
+        }
+    });
+  }
+}
+
+
+/* ------------------------------------------------------------------------------------------
+  - Lists updater and relative listeners
+  ------------------------------------------------------------------------------------------ */
+
+/* ------------------------------
+  - Create primary list
+  ------------------------------ */
+function update_list (parent, list, listener, kill_listener)
+{
+  for (let i = 0; i < list.length; i++)
+  {
+    let li = document.createElement('li');
+    let h4 = document.createElement('h4');
+
+    // for each element of list inizialize flag to perform the operation one time
+    list[i].executed = false;
+
+    li.setAttribute('class', 'w3-display-container w3-bar w3-hover-cyan');
+    h4.innerHTML = list[i].name;
+
+    li.addEventListener('click', (event) => {
+      listener(event.target.parentNode, list[i]);
+    });
+
+    li.appendChild(h4);
+    
+    if (kill_listener)
+    {
+      let kill = document.createElement('i');
+      //kill.innerHTML = '&times';
+      kill.setAttribute('class', 'fa fa-close w3-large w3-display-topright');
+      kill.addEventListener('click', (event) => {
+        kill_listener(list[i]);
+      });
+      li.appendChild(kill);
+    }
+    parent.appendChild(li);
+  }
+}
+
+/* ------------------------------
+  - Create drop down list
+  ------------------------------ */
+function update_sublist (curr, parent, name, id, listener)
+{
+  // don't create sublists if no nodes are available
+  if (curr[0] === "") return;
+
+  // build sublist from cache
+  let sub = document.createElement('ul');
+    // append sublist to first level list
+  parent.appendChild(sub);
+  sub.id = id;
+  sub.setAttribute('name', name);
+  sub.setAttribute('class','w3-ul w3-card-4');
+  sub.style.display = 'block';
+
+  for (let i = 0; i < curr.length; i++)
+  {
+    let sub_el = document.createElement('li');
+
+    sub_el.setAttribute('class', 'w3-bar w3-hover-white');
+    let h6 = document.createElement('h6');
+
+    h6.innerHTML = curr[i];
+    // for each element set onclick event
+    sub_el.addEventListener('click', listener);
+    sub_el.appendChild(h6);
+    sub.appendChild(sub_el);
+  }
+  // append sublist to first level list
+  //parent.appendChild(sub);
+}
+
+/* ------------------------------
+  - Retrive, with service call, all nodes available for the pack
+  ------------------------------ */
+function list_packages_listener (parent, package)
+{
+  // check if operation has alrwedy been performed
+  if (package.executed || package.nodes !== undefined)
+  {
+    toggle_visibility(package.name + '_nodes');
+  }
+  else
+  {
+    // switch flag to true and perform for the first (and last) time the operation
+    package.executed = true;
+    // get nodes list for current package
+    cache.call_service(
+      '/node_list', 'west_tools/NodeList',
+      { pack: package.name },
+      (result) => {
+        package.nodes = [];
+        for (let j = 0; j < result.node_list.length; j++) {
+          package.nodes.push(result.node_list[j]);
+        }
+        // trigger list view update
+        if (result.node_list.length >= 1 && result.node_list[0] !== '')
+          update_sublist(
+            package.nodes,
+            parent,
+            package.name,
+            package.name + '_nodes',
+            cache.launch_node
+          );
+      },
+      (error) => {
+        show_snackbar('Package : ' + package.name + ' does NOT contain available node!');
+        console.log('node_list:  ' + error);
+      }
+    );
+  }
+}
+
+/* ------------------------------
+  - Retrive, with service call, all services available for the node
+  ------------------------------ */
+function list_nodes_listener (parent, node)
+{
+  // check if operation has alrwedy been performed
+  if (node.executed || node.services !== undefined)
+  {
+    toggle_visibility(node.name + '_services');
+  }
+  else
+  {
+    // switch flag to true and perform for the first (and last) time the operation
+    node.executed = true;
+    // get services list from current node
+    cache.call_service(
+      '/service_list', 'west_tools/ServiceList',
+      { node: node.name },
+      (result) => {
+        node.services = [];
+        for (let j = 0; j < result.service_list.length; j++) {
+          node.services.push(result.service_list[j]);
+        }
+        //trigger list view update
+        if (result.service_list.length >= 1 && result.service_list[0] !== '')
+          update_sublist(
+            node.services,
+            parent,
+            node.name,
+            node.name + '_services',
+            cache.launch_service
+          );
+      },
+      (error) => {
+        show_snackbar('Node : ' + node.name + ' does NOT contain available service!');
+        console.log('service_list:  ' + error);
+      }
+    );
+  }
+}
+
+/* ------------------------------
+  - TODO: docstring
+  ------------------------------ */
+function kill_node_listener (node)
+{
+  // call service
+  cache.call_service(
+    '/kill_node',
+    '/west_tools/KillNode',
+    { node: node.name },
+    (result) => {
+      show_snackbar('Node : ' + node. name + ' killed successfully');
+    },
+    (error) => {
+      show_snackbar('Node : ' + node. name + ' NOT killed!');
+      console.log(error);
+    }
+  );
+
+  // finally, after one second, refresh app page
+  refresh_page(1000);
+}
+
+/* ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------ */
+
 
 /* ------------------------------
   - Set or toggle visibility to the tag identified by id
@@ -69,8 +412,8 @@ function refresh_page (timeout)
   toggle_visibility('back_service', 'none');
   setTimeout(() => {
 
-    cache.packages();
-    cache.nodes();
+    cache.update_packages();
+    cache.update_nodes();
 
     clear_param_section();
     // stop animation
@@ -92,7 +435,9 @@ function show_snackbar (message)
   setTimeout( () => { snackbar.className = ''; }, 5000);
 }
 
-// create a simple html header
+/* ------------------------------
+  - Create a simple html header
+  ------------------------------ */
 function build_header (address, port)
 {
   let header = document.getElementsByTagName('header')[0];
@@ -111,7 +456,9 @@ function build_header (address, port)
   toggle_visibility('connection', 'none');
 }
 
-// Check if form input is valid. If it is, try to connect to ros
+/* ------------------------------
+  - Check if form input is valid. If it is, try to connect to ros
+  ------------------------------ */
 function validate_connection (form)
 {
   let conn_data = {};
@@ -128,10 +475,11 @@ function validate_connection (form)
   }
 }
 
-// build service call parameters form with request details
+/* ------------------------------
+  - Build service call parameters form with request details
+  ------------------------------ */
 function build_param_section (name, details, response)
 {
-  console.log(response);
   document.getElementById('result').children[1].setAttribute('fieldname', response[0]);
 
   let param_section = document.getElementById('param_section');
@@ -184,7 +532,9 @@ function build_param_section (name, details, response)
   toggle_visibility('back_service', 'inline-block');
 }
 
-// Check if param form input is valid. If it is, try to call relative service
+/* ------------------------------
+  - Check if param form input is valid. If it is, try to call relative service
+  ------------------------------ */
 function validate_param_section (form)
 {
   // form -> ul
@@ -201,11 +551,8 @@ function validate_param_section (form)
       param[form.elements[i].name] = Number(form.elements[i].value);
   }
 
-  console.log('param');
-  console.log(param);
-
   // call service
-  cache.ros_call(
+  cache.call_service(
     form.getAttribute('service_name'),
     form.getAttribute('service_type'),
     param,
@@ -222,7 +569,7 @@ function validate_param_section (form)
           for (let i = 0; i < field.length; i++)
           {
             let p = document.createElement('p')
-            p.innerHTML = i + ' - [' + field[i].toString() + ']';
+            p.innerHTML = (i + 1) + ' - [' + field[i].toString() + ']';
             div.appendChild(p);
           }
         } break;
@@ -249,7 +596,7 @@ function validate_param_section (form)
       toggle_visibility('result');
     },
     (error) => {
-      show_snackbar('service NOT called!');
+      show_snackbar('Service : ' + form.getAttribute('service_name') + ' NOT called!');
       console.log(error);
     }
   );
@@ -262,7 +609,9 @@ function validate_param_section (form)
   toggle_visibility('back_service', 'none');  
 }
 
-// cancel service request
+/* ------------------------------
+  - Cancel service request
+  ------------------------------ */
 function clear_param_section ()
 {
   toggle_visibility('param_section', 'none');
@@ -280,326 +629,9 @@ function clear_param_section ()
   document.getElementById('result').children[1].innerHTML = '';
 }
 
-// TODO: docstring
-function call_service (ros, name, type, params, success_cb, error_cb)
-{
-  let srv = new ROSLIB.Service({
-    ros: ros,
-    name: name,
-    serviceType: type
-  });
-
-  let request = new ROSLIB.ServiceRequest(params);
-
-  srv.callService(request, success_cb, error_cb);
-}
-
-//
-function call_service_builder (ros)
-{
-  return function (name, type, params, success_cb, error_cb)
-  {
-    let srv = new ROSLIB.Service({
-      ros: ros,
-      name: name,
-      serviceType: type
-    });
-
-    let request = new ROSLIB.ServiceRequest(params);
-
-    srv.callService(request, success_cb, error_cb);
-  }
-}
-
-// TODO: docstring
-function launch_node_builder (ros)
-{
-  return function (event) 
-  {
-    console.log('launching ' + event.target.innerHTML + ' ...');
-    // call service to launch new node
-    call_service(
-      ros,
-      '/run_node',
-      '/west_tools/RunNode',
-      {
-        pack: event.target.parentNode.parentNode.getAttribute('name'),
-        node: event.target.innerHTML
-      },
-      (result) => {
-        show_snackbar('node launched successfully');
-        console.log(result);
-      },
-      (error) => {
-        show_snackbar('node NOT launched!');
-        console.log(error);
-      }
-    );
-
-    // finally, after one second, refresh app page
-    refresh_page(1000);
-  }
-}
-
-// callback of service click
-function launch_service_builder (ros)
-{
-  return function (event)
-  {
-    console.log('launching ' + event.target.innerHTML + ' service ...');
-    // retrive service type and params by name
-    ros.getServiceType(event.target.innerHTML, (type) => {
-      ros.getServiceRequestDetails(type, (typeDetails) => {
-        ros.getServiceResponseDetails(type, (responseDetails) => {
-          clear_param_section();
-          toggle_visibility('controls', 'none');
-          build_param_section(event.target.innerHTML, typeDetails.typedefs[0], responseDetails.typedefs[0].fieldnames);
-        });
-      });
-    });
-  };
-}
-
-// create primary list
-function update_list (ros, parent, list, listener, kill_listener)
-{
-  for (let i = 0; i < list.length; i++)
-  {
-    let li = document.createElement('li');
-    let h4 = document.createElement('h4');
-
-    // for each element of list inizialize flag to perform the operation one time
-    list[i].executed = false;
-
-    li.setAttribute('class', 'w3-display-container w3-bar w3-hover-cyan');
-    h4.innerHTML = list[i].name;
-
-    h4.addEventListener('click', (event) => {
-      listener(ros, event.target.parentNode, list[i]);
-    });
-
-    li.appendChild(h4);
-    
-    if (kill_listener)
-    {
-      let kill = document.createElement('i');
-      //kill.innerHTML = '&times';
-      kill.setAttribute('class', 'fa fa-close w3-large w3-display-topright');
-      kill.addEventListener('click', (event) => {
-        kill_listener(ros, event.target.parentNode, list[i]);
-      });
-      li.appendChild(kill);
-    }
-    parent.appendChild(li);
-  }
-}
-
-// create drop down list
-function update_sublist (curr, parent, name, id, listener)
-{
-  // don't create sublists if no nodes are available
-  if (curr[0] === "") return;
-
-  // build sublist from cache
-  let sub = document.createElement('ul');
-    // append sublist to first level list
-  parent.appendChild(sub);
-  sub.id = id;
-  sub.setAttribute('name', name);
-  sub.setAttribute('class','w3-ul w3-card-4');
-  sub.style.display = 'block';
-
-  for (let i = 0; i < curr.length; i++)
-  {
-    let sub_el = document.createElement('li');
-
-    sub_el.setAttribute('class', 'w3-bar w3-hover-white');
-    let h6 = document.createElement('h6');
-
-    h6.innerHTML = curr[i];
-    // for each element set onclick event
-    h6.addEventListener('click', listener);
-    sub_el.appendChild(h6);
-    sub.appendChild(sub_el);
-  }
-  // append sublist to first level list
-  //parent.appendChild(sub);
-}
-
-// fill cache with available packages
-function update_available_packages_builder (ros)
-{
-  return function () {
-    //
-    packages = undefined;
-    document.getElementById('packages').children[0].innerHTML = '';
-  
-    call_service(
-        ros, '/pack_list', 'west_tools/PackList', {},
-        (result) =>{
-          packages = [];
-          for (let i = 0; i < result.pack_list.length; i++)
-          {
-            packages.push(
-            {
-              name: result.pack_list[i],
-              nodes: undefined
-            });
-          }
-          // manually trigger packages list view update
-          if (result.pack_list.length >= 1 && result.pack_list[0] !== '')
-          {
-            update_list(
-              ros,
-              document.getElementById('packages').children[0],
-              packages,
-              list_packages_listener
-            );
-          }
-        },
-        (error) =>{
-          console.log('pack_list:  ' + error);
-        }
-    );
-  }
-}
-
-// fill cache with available nodes
-function update_available_nodes_builder (ros)
-{
-  return function () {
-    // get all running nodes on remote host
-    nodes = undefined;
-    document.getElementById('running_list').children[0].innerHTML = '';
-  
-    // get all running nodes on remote host
-    ros.getNodes((data) => {
-        nodes = [];
-  
-        for (let i = 0; i < data.length; i++)
-        {
-          nodes.push(
-          {
-            name: data[i],
-            services: undefined
-          });
-        }
-        // manually trigger nodes list view update
-        if (data.length >= 1 && data[0] !== '')
-        { 
-          update_list(
-            ros,
-            document.getElementById('running_list').children[0],
-            nodes,
-            list_nodes_listener,
-            kill_node_listener
-          );
-        }
-    });
-  }
-}
-
-// retrive, with service call, all nodes available for the pack
-function list_packages_listener (ros, parent, package)
-{
-  // check if operation has alrwedy been performed
-  if (package.executed || package.nodes !== undefined)
-  {
-    toggle_visibility(package.name + '_nodes');
-  }
-  else
-  {
-    // switch flag to true and perform for the first (and last) time the operation
-    package.executed = true;
-    // get nodes list for current package
-    call_service(ros,
-      '/node_list', 'west_tools/NodeList',
-      { pack: package.name },
-      (result) => {
-        package.nodes = [];
-        for (let j = 0; j < result.node_list.length; j++) {
-          package.nodes.push(result.node_list[j]);
-        }
-        // trigger list view update
-        if (result.node_list.length >= 1 && result.node_list[0] !== '')
-          update_sublist(
-            package.nodes,
-            parent,
-            package.name,
-            package.name + '_nodes',
-            launch_node_builder(ros)
-          );
-      },
-      (error) => {
-        show_snackbar(package.name + ' package does NOT contain available node!');
-        console.log('node_list:  ' + error);
-      }
-    );
-  }
-}
-
-// retrive, with service call, all services available for the node
-function list_nodes_listener (ros, parent, node)
-{
-  // check if operation has alrwedy been performed
-  if (node.executed || node.services !== undefined)
-  {
-    toggle_visibility(node.name + '_services');
-  }
-  else
-  {
-    // switch flag to true and perform for the first (and last) time the operation
-    node.executed = true;
-    // get services list from current node
-    call_service(ros,
-      '/service_list', 'west_tools/ServiceList',
-      { node: node.name },
-      (result) => {
-        node.services = [];
-        for (let j = 0; j < result.service_list.length; j++) {
-          node.services.push(result.service_list[j]);
-        }
-        //trigger list view update
-        if (result.service_list.length >= 1 && result.service_list[0] !== '')
-          update_sublist(
-            node.services,
-            parent,
-            node.name,
-            node.name + '_services',
-            launch_service_builder(ros)
-          );
-      },
-      (error) => {
-        console.log('service_list:  ' + error);
-      }
-    );
-  }
-}
-
-// TODO: docstring
-function kill_node_listener (ros, parent, node)
-{
-  // call service
-  call_service(
-    ros,
-    '/kill_node',
-    '/west_tools/KillNode',
-    { node: node.name },
-    (result) => {
-      show_snackbar('node killed successfully');
-      console.log(result);
-    },
-    (error) => {
-      show_snackbar('node NOT killed!');
-      console.log(error);
-    }
-  );
-
-  // finally, after one second, refresh app page
-  refresh_page(1000);
-}
-
-// subcrive to rosout topic
+/* ------------------------------
+  - Subscrive to rosout topic
+  ------------------------------ */
 function rosout_subscription (ros)
 {
   let rosout = new ROSLIB.Topic({
@@ -622,15 +654,17 @@ function rosout_subscription (ros)
     });
 }
 
+/* ------------------------------
+  - TODO: docstring
+  ------------------------------ */
 function connect_to_ros (data)
 {
   var ros = new ROSLIB.Ros({
     url: 'ws://' + data.address + ':' + data.port
   });
-  // store ros variable in cache
-  //cache.ros = ros;
 
   ros.on('error', (error) => {
+    show_snackbar('Couldn\'t connect to ros, check ip address or port number');
     console.log('connection error: ', error);
   }); // on error
 
@@ -646,21 +680,27 @@ function connect_to_ros (data)
     toggle_visibility('controls', 'block');
     toggle_visibility('refresh', 'inline-block');
 
-    cache.ros_call = call_service_builder(ros);
+    // fill the cache with partially applied method on ros
+    cache.call_service = call_service_builder(ros);
+    cache.launch_node = launch_node;
+    cache.launch_service = launch_service_builder(ros);
+    cache.update_packages = update_available_packages;
+    cache.update_nodes = update_available_nodes_builder(ros);
 
-    // get available packages if not already stored in cache
-    cache.packages = update_available_packages_builder(ros);
-    cache.packages();
+    // get available packages
+    cache.update_packages();
 
     // setup subscription for rosout
     rosout_subscription(ros);
 
     // get all running nodes on remote host
-    cache.nodes = update_available_nodes_builder(ros);
-    cache.nodes();
+    cache.update_nodes();
   }); // on connection
 }
 
+/* ------------------------------
+  - TODO: docstring
+  ------------------------------ */
 window.onload = function ()
 {
   // setup initial page state

@@ -8,6 +8,6 @@
 ## extra
 
 	[] remove empty packages from list
-	[] better subscription string handling
+	[x] better subscription string handling
 	[] I am immortal
 	[] usefull launch application
