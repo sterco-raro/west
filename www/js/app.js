@@ -92,31 +92,6 @@ function show_snackbar (message)
   setTimeout( () => { snackbar.className = ''; }, 5000);
 }
 
-// rotate list arrow
-function toggle_arrow (arrow, direction, disable)
-{
-  if (disable)
-  {
-    arrow.setAttribute('disable', disable);
-    arrow.setAttribute('class', 'fa fa-arrow-right w3-large w3-display-topleft');
-  }
-  if (arrow.getAttribute('disable') === null || arrow.getAttribute('disable') !== 'true')
-  {
-    if (direction)
-    {
-      arrow.setAttribute('class', 'fa fa-arrow-' + direction + ' w3-large w3-display-topleft');
-    }
-    else if(arrow.getAttribute('class') === 'fa fa-arrow-right w3-large w3-display-topleft')
-    {
-      arrow.setAttribute('class', 'fa fa-arrow-down w3-large w3-display-topleft');
-    }
-    else
-    {
-      arrow.setAttribute('class', 'fa fa-arrow-right w3-large w3-display-topleft');
-    }
-  }
-}
-
 // create a simple html header
 function build_header (address, port)
 {
@@ -392,22 +367,18 @@ function update_list (ros, parent, list, listener, kill_listener)
   {
     let li = document.createElement('li');
     let h4 = document.createElement('h4');
-    let arrow = document.createElement('i');
 
     // for each element of list inizialize flag to perform the operation one time
     list[i].executed = false;
 
     li.setAttribute('class', 'w3-display-container w3-bar w3-hover-cyan');
     h4.innerHTML = list[i].name;
-    arrow.setAttribute('class','fa fa-arrow-right w3-large w3-display-topleft');
 
     h4.addEventListener('click', (event) => {
-      toggle_arrow(arrow);
-      listener(ros, event.target.parentNode, arrow, list[i]);
+      listener(ros, event.target.parentNode, list[i]);
     });
 
     li.appendChild(h4);
-    li.appendChild(arrow);
     
     if (kill_listener)
     {
@@ -424,7 +395,7 @@ function update_list (ros, parent, list, listener, kill_listener)
 }
 
 // create drop down list
-function update_sublist (curr, parent, name, id, arrow, listener)
+function update_sublist (curr, parent, name, id, listener)
 {
   // don't create sublists if no nodes are available
   if (curr[0] === "") return;
@@ -437,7 +408,6 @@ function update_sublist (curr, parent, name, id, arrow, listener)
   sub.setAttribute('name', name);
   sub.setAttribute('class','w3-ul w3-card-4');
   sub.style.display = 'block';
-  toggle_arrow(arrow, 'down');
 
   for (let i = 0; i < curr.length; i++)
   {
@@ -530,12 +500,11 @@ function update_available_nodes_builder (ros)
 }
 
 // retrive, with service call, all nodes available for the pack
-function list_packages_listener (ros, parent, arrow, package)
+function list_packages_listener (ros, parent, package)
 {
   // check if operation has alrwedy been performed
   if (package.executed || package.nodes !== undefined)
   {
-    //toggle_arrow(arrow);
     toggle_visibility(package.name + '_nodes');
   }
   else
@@ -558,13 +527,11 @@ function list_packages_listener (ros, parent, arrow, package)
             parent,
             package.name,
             package.name + '_nodes',
-            arrow,
             launch_node_builder(ros)
           );
       },
       (error) => {
         show_snackbar(package.name + ' package does NOT contain available node!');
-        toggle_arrow(arrow, 'right', 'true');
         console.log('node_list:  ' + error);
       }
     );
@@ -572,12 +539,11 @@ function list_packages_listener (ros, parent, arrow, package)
 }
 
 // retrive, with service call, all services available for the node
-function list_nodes_listener (ros, parent, arrow, node)
+function list_nodes_listener (ros, parent, node)
 {
   // check if operation has alrwedy been performed
   if (node.executed || node.services !== undefined)
   {
-    //toggle_arrow(arrow);
     toggle_visibility(node.name + '_services');
   }
   else
@@ -600,7 +566,6 @@ function list_nodes_listener (ros, parent, arrow, node)
             parent,
             node.name,
             node.name + '_services',
-            arrow,
             launch_service_builder(ros)
           );
       },
