@@ -193,7 +193,7 @@ function update_list (parent, list, listener, close_listener)
     if (close_listener)
     {
       let close = document.createElement('i');
-      close.setAttribute('class', 'fa fa-close w3-large w3-display-topright');
+      close.setAttribute('class', 'fa fa-close w3-xlarge w3-display-topright');
       close.addEventListener('click', (event) => { close_listener(list[i]); } );
       li.appendChild(close);
     }
@@ -363,26 +363,24 @@ function build_param_section (name, details, response)
 
   let param_section = document.getElementById('param_section');
   // param_section -> h2
-  let h2 = param_section.children[0];
+  param_section.children[0].innerHTML = 'Service name : ' + name + '<br>Service type : ' + details.type;
 
   let form = document.getElementById('param_form');
-  // form -> ul
-  let ul = form.children[0];
-
-  h2.innerHTML = 'Service name : ' + name + '<br>Service type : ' + details.type;
 
   form.setAttribute('service_name', name);
   form.setAttribute('service_details', details.type);
 
+  let span = form.children[0];
+
   for (let i = 0; i < details.fieldnames.length; i++)
   {
-    let li = document.createElement('li');
-    let h3 = document.createElement('h3');
+    let label = document.createElement('label');
     let input = document.createElement('input');
     
-    h3.innerHTML = details.fieldnames[i];
+    label.innerHTML = details.fieldnames[i];
 
     input.setAttribute('name', details.fieldnames[i]);
+    input.setAttribute('class', 'w3-input w3-hover-cyan');
     input.setAttribute('placeholder', details.fieldtypes[i]);
     input.setAttribute('required', true);
 
@@ -401,9 +399,8 @@ function build_param_section (name, details, response)
       input.setAttribute('step', 'any');
     }
 
-    li.appendChild(h3);
-    li.appendChild(input);
-    ul.appendChild(li);
+    span.appendChild(label);
+    span.appendChild(input);
   }
 
   toggle_visibility('param_section', 'block');
@@ -421,8 +418,9 @@ function validate_param_section (form)
   let param = {};
 
   // subtract one to form to avoid count last once buttons
-  for (let i = 0; i < form.elements.length - 1; i++)
+  for (let i = 0; i < form.elements.length; i++)
   {
+    console.log(form.elements[i]);
     // if current element is an input tag
     if (isNaN(form.elements[i].value))
       param[form.elements[i].name] = form.elements[i].value;
@@ -606,7 +604,7 @@ function show_snackbar (message)
 function build_app_page (address, port)
 {
   let header = document.getElementsByTagName('header')[0];
-  
+
   // set title and some info about remote host
   header.children[1].innerHTML = 'connected to <b>' + address + '</b> on port <b>' + port + '</b>';
 

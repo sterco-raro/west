@@ -21,12 +21,12 @@
 </head>
 <body>
 
-  <div id="main" class="container">
+  <div id="main" class="w3-container">
 
     <section>
       <header>
         <h2>West</h2>
-        <p>a simple and clean web interface to control a remote ros machine</p>
+        <h4>a simple and clean web interface to control a remote ros machine</h4>
       </header>
 
       <hr>
@@ -34,18 +34,15 @@
     </section>
 
     <section id="connection">
-      <form>
-        <h4> Machine ip : <br>
-          <input type="text" name="address" placeholder="remote machine ip" maxlength="20" value="127.0.0.1" required>
-        </h4>
+      <form class="w3-container">
+        <label> Machine ip</label>
+        <input class="w3-input w3-hover-cyan" type="text" name="address" placeholder="remote machine ip" maxlength="20" value="127.0.0.1" required>
+        
+        <label> Port</label>
+        <input class="w3-input w3-hover-cyan" type="text" name="port" placeholder="listening port" maxlength="20" value="9090" required>
+        
         <br>
-        <br>
-        <h4> Port : <br>
-          <input type="number" name="port" placeholder="listening port" maxlength="20" value="9090" required>
-        </h4>
-        <br>
-        <br>
-        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="validate_connection(this.parentNode); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan " onclick="validate_connection(this.parentNode); return false;">
           Connect <i class="glyphicon glyphicon-menu-right w3-large"></i>
         </h4>
       </form>
@@ -57,15 +54,15 @@
 
       <section id="controls">
 
-        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('running', this); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('running', this); return false;">
           Active nodes <i class="glyphicon glyphicon-fire w3-xlarge"></i>
         </h4>
         
-        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('packages', this); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('packages', this); return false;">
           Launch <i class="glyphicon glyphicon-plane w3-xlarge"></i>
         </h4>
 
-        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('logs', this); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('logs', this); return false;">
           Subscription <i class="glyphicon glyphicon-leaf w3-xlarge"></i>
         </h4>
 
@@ -80,9 +77,9 @@
         <span id="param_section">
           <h2></h2>
           <form id="param_form">
-            <ul class="w3-ul w3-card-4 scroll"></ul>
+            <span></span>
             <br>
-            <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="validate_param_section(this.parentNode); return false;">
+            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_param_section(this.parentNode); return false;">
               Call <i class="glyphicon glyphicon-menu-right w3-large"></i>
             </h4>
           </form>

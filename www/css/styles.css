@@ -27,33 +27,6 @@ header h2
   color: #008CBA;
 }
 
-button
-{
-  display: inline-block;
-  border-radius: 8px;
-  border: 2px solid #00bcba;
-
-  font-family: monospace;
-  font-size: 14px;
-}
-
-i
-{
-  display: none;
-}
-
-.none
-{
-  display: none;
-}
-
-.block {
-  display: block;
-}
-
-.inline-block {
-  display: inline-block;
-}
 /* End general features*/
 
 
@@ -114,6 +87,7 @@ ul.scroll {
 /* ------------------------------
   - Container class
   ------------------------------ */
+  
 .container
 {
   margin: 10px auto;
