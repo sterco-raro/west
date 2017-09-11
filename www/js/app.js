@@ -16,12 +16,13 @@
   ------------------------------------------------------------------------------------------ */
 
 /* ------------------------------
-  -Result function parameters are :
-    name : service name
-    type : service type
-    params : service parameters
-    success_cb : function to call if service call was successfull
-    error_cb : function to call if service call has not been successfull
+  - With result function we can easily call a service 
+  - Result function parameters are :
+      name : service name
+      type : service type
+      params : service parameters
+      success_cb : function to call if service call was successfull
+      error_cb : function to call if service call has not been successfull
   ------------------------------ */
 function call_service_builder (ros)
 {
@@ -41,8 +42,8 @@ function call_service_builder (ros)
 
 /* ------------------------------
   - Callback of service click
-  - TODO: docstring
-  ------------------------------ */
+  - Call service '/run_node' and launch a new node
+    ------------------------------ */
 function launch_node (event)
 {
   // call service to launch new node
@@ -68,7 +69,8 @@ function launch_node (event)
 
 /* ------------------------------
   - Callback builder of service click, return a function like 'function (event) {}'
-  - TODO: docstring
+  - Retrive service information type, type details and response details, and build
+  param section to call a service
   ------------------------------ */
 function launch_service_builder (ros)
 {
@@ -88,7 +90,7 @@ function launch_service_builder (ros)
 }
 
 /* ------------------------------
-  - TODO: docstring
+  - Call service '/pack_list' and update launch node list
   ------------------------------ */
 function update_available_packages ()
 {
@@ -127,8 +129,8 @@ function update_available_packages ()
 }
 
 /* ------------------------------
-  - TODO: docstring
-  ------------------------------ */
+  - Call service '/node_list' and update running node list
+    ------------------------------ */
 function update_available_nodes_builder (ros)
 {
   return function () {
@@ -168,34 +170,33 @@ function update_available_nodes_builder (ros)
   ------------------------------------------------------------------------------------------ */
 
 /* ------------------------------
-  - Create primary list
+  - For each element of list create a  list item and append it on parent.
+  - If @close_listener is provided, add to list item a remove button, that
+  delete item from the list and execute @close_listener function when is clicked
   ------------------------------ */
-function update_list (parent, list, listener, kill_listener)
+function update_list (parent, list, listener, close_listener)
 {
   for (let i = 0; i < list.length; i++)
   {
-    let li = document.createElement('li');
-    let h4 = document.createElement('h4');
-
     // for each element of list inizialize flag to perform the operation one time
     list[i].executed = false;
 
-    li.setAttribute('class', 'w3-display-container w3-bar w3-hover-cyan');
+    let h4 = document.createElement('h4');
     h4.innerHTML = list[i].name;
 
+    let li = document.createElement('li');
+    li.setAttribute('class', 'w3-display-container w3-bar w3-hover-cyan');
     li.addEventListener('click', (event) => { listener(event.target.parentNode, list[i]); } );
-
     li.appendChild(h4);
-    
-    if (kill_listener)
-    {
-      let kill = document.createElement('i');
-      //kill.innerHTML = '&times';
-      kill.setAttribute('class', 'fa fa-close w3-large w3-display-topright');
-      kill.addEventListener('click', (event) => { kill_listener(list[i]); } );
-      li.appendChild(kill);
-    }
     parent.appendChild(li);
+    
+    if (close_listener)
+    {
+      let close = document.createElement('i');
+      close.setAttribute('class', 'fa fa-close w3-large w3-display-topright');
+      close.addEventListener('click', (event) => { close_listener(list[i]); } );
+      li.appendChild(close);
+    }
   }
 }
 
@@ -209,32 +210,32 @@ function update_sublist (curr, parent, name, id, listener)
 
   // build sublist from cache
   let sub = document.createElement('ul');
-    // append sublist to first level list
-  parent.appendChild(sub);
   sub.id = id;
   sub.setAttribute('name', name);
   sub.setAttribute('class','w3-ul w3-card-4');
-  sub.style.display = 'block';
+  // append sublist to first level list
 
   for (let i = 0; i < curr.length; i++)
   {
-    let sub_el = document.createElement('li');
-
-    sub_el.setAttribute('class', 'w3-bar w3-hover-white');
     let h6 = document.createElement('h6');
-
     h6.innerHTML = curr[i];
+
+    let sub_el = document.createElement('li');
+    sub_el.setAttribute('class', 'w3-bar w3-hover-white');
     // for each element set onclick event
     sub_el.addEventListener('click', listener);
     sub_el.appendChild(h6);
+
     sub.appendChild(sub_el);
   }
-  // append sublist to first level list
-  //parent.appendChild(sub);
+  
+  parent.appendChild(sub);
+  toggle_visibility(id, 'block');
 }
 
 /* ------------------------------
-  - Retrive, with service call, all nodes available for the pack
+  - Retrive, with service call, all nodes available for the package
+  - Call service '/node_list' provided by west_tools rosnode
   ------------------------------ */
 function list_packages_listener (parent, package)
 {
@@ -280,6 +281,7 @@ function list_packages_listener (parent, package)
 
 /* ------------------------------
   - Retrive, with service call, all services available for the node
+  - Call service '/service_list' provided by west_tools rosnode
   ------------------------------ */
 function list_nodes_listener (parent, node)
 {
@@ -324,7 +326,8 @@ function list_nodes_listener (parent, node)
 }
 
 /* ------------------------------
-  - TODO: docstring
+  - Kill node passed as parameter
+  - Call service '/kill_node' provided by west_tools rosnode
   ------------------------------ */
 function kill_node_listener (node)
 {
@@ -603,10 +606,8 @@ function show_snackbar (message)
 function build_app_page (address, port)
 {
   let header = document.getElementsByTagName('header')[0];
-  console.log(header);
-
+  
   // set title and some info about remote host
-  header.children[0].innerHTML = 'West'
   header.children[1].innerHTML = 'connected to <b>' + address + '</b> on port <b>' + port + '</b>';
 
   // hide connection form
@@ -639,7 +640,8 @@ function validate_connection (form)
 
 
 /* ------------------------------
-  - Subscrive to rosout topic
+  - Subscrive to rosout topic and update logs section
+  each time it is published a new topic
   ------------------------------ */
 function rosout_subscription (ros)
 {
@@ -652,6 +654,7 @@ function rosout_subscription (ros)
   rosout.subscribe( (message) => {
     // create a new subscription entry
     let li = document.createElement('li');
+    li.setAttribute('class', 'w3-bar');
 
     // left: topic name
     li.innerHTML = '<span style="float: left;"><b>/rosout</b>:</span>';
@@ -692,19 +695,19 @@ function connect_to_ros (data)
     cache.update_packages = update_available_packages;
     cache.update_nodes = update_available_nodes_builder(ros);
 
+    // get all running nodes on remote host
+    cache.update_nodes();
+
     // get available packages
     cache.update_packages();
 
     // setup subscription for rosout
     rosout_subscription(ros);
-
-    // get all running nodes on remote host
-    cache.update_nodes();
   }); // on connection
 }
 
 /* ------------------------------
-  - TODO: docstring
+  - Set, on window first load, display value of various section
   ------------------------------ */
 window.onload = function ()
 {
@@ -716,12 +719,11 @@ window.onload = function ()
   toggle_visibility('running', 'none');
   toggle_visibility('logs', 'none');
   toggle_visibility('packages', 'none');
-  // hide button
-  toggle_visibility('refresh', 'none');
-  toggle_visibility('back_service', 'none');
-
   // id running
   toggle_visibility('running_list', 'block');
   toggle_visibility('param_section', 'none');
   toggle_visibility('result', 'none');
+  // hide button
+  toggle_visibility('refresh', 'none');
+  toggle_visibility('back_service', 'none');
 }

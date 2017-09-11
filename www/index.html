@@ -25,7 +25,7 @@
 
     <section>
       <header>
-        <h2>west</h2>
+        <h2>West</h2>
         <p>a simple and clean web interface to control a remote ros machine</p>
       </header>
 
@@ -35,13 +35,19 @@
 
     <section id="connection">
       <form>
-        <input type="text" name="address" placeholder="remote machine ip" maxlength="20" value="127.0.0.1" required>
+        <h4> Machine ip : <br>
+          <input type="text" name="address" placeholder="remote machine ip" maxlength="20" value="127.0.0.1" required>
+        </h4>
         <br>
         <br>
-        <input type="number" name="port" placeholder="listening port" maxlength="20" value="9090" required>
+        <h4> Port : <br>
+          <input type="number" name="port" placeholder="listening port" maxlength="20" value="9090" required>
+        </h4>
         <br>
         <br>
-        <button type="submit" onclick="validate_connection(this.form); return false;">connect</button>
+        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="validate_connection(this.parentNode); return false;">
+          Connect <i class="glyphicon glyphicon-menu-right w3-large"></i>
+        </h4>
       </form>
       <hr>
       <br>
@@ -55,12 +61,12 @@
           Active nodes <i class="glyphicon glyphicon-fire w3-xlarge"></i>
         </h4>
         
-        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('logs', this); return false;">
-          Subscription <i class="glyphicon glyphicon-leaf w3-xlarge"></i>
-        </h4>
-        
         <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('packages', this); return false;">
           Launch <i class="glyphicon glyphicon-plane w3-xlarge"></i>
+        </h4>
+
+        <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="switch_controls('logs', this); return false;">
+          Subscription <i class="glyphicon glyphicon-leaf w3-xlarge"></i>
         </h4>
 
       </section>
@@ -76,7 +82,9 @@
           <form id="param_form">
             <ul class="w3-ul w3-card-4 scroll"></ul>
             <br>
-            <button type="submit" onclick="validate_param_section(this.form); return false;"> call </button>  
+            <h4 class="w3-bar-item w3-button w3-hover-cyan inline-block" onclick="validate_param_section(this.parentNode); return false;">
+              Call <i class="glyphicon glyphicon-menu-right w3-large"></i>
+            </h4>
           </form>
         </span>
           
