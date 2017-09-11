@@ -78,7 +78,7 @@ function launch_service_builder (ros)
     ros.getServiceType(event.target.innerHTML, (type) => {
       ros.getServiceRequestDetails(type, (typeDetails) => {
         ros.getServiceResponseDetails(type, (responseDetails) => {
-          clear_param_section();
+          //clear_param_section();
           toggle_visibility('controls', 'none');
           build_param_section(event.target.innerHTML, typeDetails.typedefs[0], responseDetails.typedefs[0].fieldnames);
         });
@@ -491,17 +491,17 @@ function validate_param_section (form)
 function clear_param_section ()
 {
   toggle_visibility('param_section', 'none');
-  toggle_visibility('result', 'none');
   toggle_visibility('param_form', 'block');
+  toggle_visibility('result', 'none');
   toggle_visibility('controls', 'block');
   toggle_visibility('back_service', 'none');
   toggle_visibility('running_list', 'block');
   
-  // param_section -> header
+  // param_section -> h2
   document.getElementById('param_section').children[0].innerHTML = '';
   // form -> ul
   document.getElementById('param_form').children[0].innerHTML = '';
-  // result
+  // result -> ul
   document.getElementById('result').children[1].innerHTML = '';
 }
 
