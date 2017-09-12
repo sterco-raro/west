@@ -189,8 +189,8 @@ function update_list (parent, list, listener, close_listener)
     li.addEventListener('click', (event) => { listener(event.target.parentNode, list[i]); } );
     li.appendChild(h4);
     parent.appendChild(li);
-    
-    if (close_listener)
+
+    if (close_listener && (list[i].name !== '/west_tools_server' && list[i].name !== '/rosbridge_websocket') )
     {
       let close = document.createElement('i');
       close.setAttribute('class', 'fa fa-close w3-xlarge w3-display-topright');
@@ -712,7 +712,7 @@ window.onload = function ()
   // setup initial page state
   toggle_visibility('connection', 'block');
   // hide all section of app
-  toggle_visibility('app_page', 'none');
+  //toggle_visibility('app_page', 'none');
   toggle_visibility('controls', 'none');
   toggle_visibility('running', 'none');
   toggle_visibility('logs', 'none');
