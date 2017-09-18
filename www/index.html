@@ -25,11 +25,11 @@
   <div id="main" class="w3-container">
 
     <section>
-      <header>
+      <header style="display: inline-block;">
         <h2>West</h2>
         <h4>a simple and clean web interface to control a remote ros machine</h4>
       </header>
-
+      <i id="refresh" class="glyphicon glyphicon-refresh w3-xlarge" onclick="refresh_page(); return false;"></i>
       <hr>
       <br>
     </section>
@@ -80,6 +80,9 @@
           <form id="param_form">
             <span></span>
             <br>
+            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="clear_param_section(); return false;">
+              <i class="glyphicon glyphicon-menu-left w3-large"></i> Back
+            </h4>
             <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_param_section(this.parentNode); return false;">
               Call <i class="glyphicon glyphicon-menu-right w3-large"></i>
             </h4>
@@ -109,9 +112,6 @@
 
 
       <div id="snackbar"></div>
-
-      <i id="back_service" class="glyphicon glyphicon-menu-left w3-xlarge" onclick="clear_param_section(); return false;"></i>
-      <i id="refresh" class="glyphicon glyphicon-refresh w3-xlarge" onclick="refresh_page(); return false;"></i>
 
     </div> <!-- id="app_page" -->
   </div>

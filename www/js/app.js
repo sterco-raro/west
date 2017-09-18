@@ -606,7 +606,7 @@ function build_app_page (address, port)
   let header = document.getElementsByTagName('header')[0];
 
   // set title and some info about remote host
-  header.children[1].innerHTML = 'connected to <b>' + address + '</b> on port <b>' + port + '</b>';
+  header.children[1].innerHTML = 'connected to <b>' + address + '</b> on port <b>' + port + '</b> &nbsp;';
 
   // hide connection form
   toggle_visibility('connection', 'none');
