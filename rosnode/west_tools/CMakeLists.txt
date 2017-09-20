@@ -17,7 +17,8 @@ add_service_files(
   ServiceList.srv
   RunNode.srv
   KillNode.srv
-  WNode.srv
+  WNodeList.srv
+  WNodeInput.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
