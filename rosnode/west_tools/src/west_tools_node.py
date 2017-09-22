@@ -5,21 +5,13 @@ import rospy
 from west_tools.srv import *
 from subprocess import Popen, PIPE
 
-wnodes = []
-
-class WNode():
-	"""docstring for WNode"""
-	def __init__(self, name, process):
-		super(WNode, self).__init__()
-		self.name = name
-		self.process = process
-
-		
+# dictionary that keeps all nodes lauched by West, to which
+# is possible forward string as standard input
+wnodes = {}
 
 def handle_pack_list (req):
 	# spawn rospack process to retrive all packages in ros and put the result in a list
 	cmd = ['rospack', 'list-names']
-
 	packs = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
 	packs = packs.split('\n')
 
@@ -35,7 +27,7 @@ def handle_node_list (req):
 	catkin_path = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
 
 	# check if we found at least one valid path, otherwise return a empty list
-	if ((ros_path + catkin_path) == ''):
+	if (ros_path + catkin_path) == '':
 		return NodeListResponse()
 
 	# spawn find process to retrive a nodes list
@@ -51,7 +43,7 @@ def handle_node_list (req):
 	return NodeListResponse(nodes)
 
 def handle_service_list (req):
-	# obtain relative node service list
+	# obtain relative node service list by 'rosnode info' command
 	cmd = ['rosnode', 'info', req.node]
 	services = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
 	services = ((services.split('Services: \n')[1]).split('\n\n')[0]).split('\n')
@@ -67,49 +59,47 @@ def handle_service_list (req):
 def handle_run_node (req):
 	# use 'rosrun' command with package and nodes given in service request
 	cmd = ['rosrun', req.pack, req.node]
-	process = Popen (cmd, stdout = PIPE, stderr = PIPE)
+	process = Popen (cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
 	
-	# if is present a node with the same name we delete it
-	for e in wnodes:
-		if (e.name == req.node)
-			wnodes.remove(e)
+	# check if node to launch is already running
+	if req.node in wnodes :
+		wnodes[req.node].kill()
 
-	# create new WNode and add it to list
-	node = WNode(req.node, process)
-	wnodes.append(node)
-
-	return node.poll() == None
+	# create entry on wnodes with 
+	# key : req.node 	node name
+	# value : process 	relative process 
+	wnodes[req.node] = process
+	# return true if process is alive, false otherwise
+	return RunNodeResponse(process.poll() == None)
 
 def handle_kill_node (req):
-	# use 'rosnode kill' command to kill requested node, ros takes care to do this dirty job
+	# use 'rosnode kill' command to kill node, ros takes care to do this dirty job
 	cmd = ['rosnode', 'kill', req.node]
 	kill = Popen (cmd, stdout = PIPE, stderr = PIPE)
 	# wait util kill process exspire
 	kill.wait()
+	# check if node killed is a wnode, if it is remove this from wnodes
+	# check also if relative process still alive, in this case kill it too
+	if req.node in wnodes :
+		if wnodes[req.node].poll() == None:
+			wnodes[req.node].kill()
+		del wnodes[req.node]
 
-	# check if node's process is normally die, else kill it
-	for e in wnodes:
-		if (e.name == req.node)
-			if (e.process.poll() == None)
-				e.process.kill()
-		# finally we remove this WNode from list
-		wnodes.remove()
-		return True
-
-	return False
+	return KillNodeResponse(True)
 
 def handle_wnode_list (req):
-	return WNodeListResponse(wnodes)
+	# simply return a list of wnodes keys
+	return WNodeListResponse(wnodes.keys())
 
 def handle_wnode_input (req):
-	# check if node requested is present, and if it is write given text to its standard input
-	for e in wnodes:
-		if (e.name == req.node)
-			if (e.process.poll() == None)
-				e.stdinput.write(req.text)
-				return True
+	# check if node is present on wnodes and if it is still alive
+	# then is possible to write into its standard input
+	if req.node in wnodes :
+		if wnodes[req.node].poll() == None :
+			wnodes[req.node].stdin.write(req.text)
+			return WNodeInputResponse(True)
 
-	return False
+	return WNodeInputResponse(False)
 
 if __name__ == '__main__':
 	
@@ -125,13 +115,13 @@ if __name__ == '__main__':
 	rospy.Service('wnode_list', WNodeList, handle_wnode_list)
 	rospy.Service('wnode_input', WNodeInput, handle_wnode_input)
 
-	print '''Available services
-			\n\t /pack_list 
-			\n\t /node_list <package>
-			\n\t /service_list <node>
-			\n\t /run_node <node>
-			\n\t /kill_node <node>
-			\n\t /wnode_list
-			\n\t /wnode_input <node> <text>
+	print '''Available services :
+		\t /pack_list 
+		\t /node_list <package>
+		\t /service_list <node>
+		\t /run_node <node>
+		\t /kill_node <node>
+		\t /wnode_list
+		\t /wnode_input <node> <text>
 		'''
 	rospy.spin()
