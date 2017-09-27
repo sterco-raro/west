@@ -2,12 +2,22 @@
 # license removed for brevity
 
 import rospy
+from time import sleep
 from west_tools.srv import *
 from subprocess import Popen, PIPE
 
 # dictionary that keeps all nodes lauched by West, to which
 # is possible forward string as standard input
 wnodes = {}
+
+def running_nodes (): # utility
+	# obtain list of running nodes
+	cmd = ['rosnode', 'list']
+	nodes = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
+	nodes = nodes.split('\n')
+
+	# now @nodes is a list of running nodes on ros, and we trasform it in a set
+	return set(nodes)
 
 def handle_pack_list (req):
 	# spawn rospack process to retrive all packages in ros and put the result in a list
@@ -57,18 +67,26 @@ def handle_service_list (req):
 	return ServiceListResponse(services)
 
 def handle_run_node (req):
+	# get a set of running nodes
+	nodes = running_nodes()
+
 	# use 'rosrun' command with package and nodes given in service request
 	cmd = ['rosrun', req.pack, req.node]
 	process = Popen (cmd, stdin = PIPE, stdout = PIPE, stderr = PIPE)
 	
+	# after new node launch, we require again a set of running nodes
+	# and make the difference (set difference) with this and the previous one
+	# to get the new entry, this is a new key for wnode
+	key = (running_nodes() - nodes).pop()
 	# check if node to launch is already running
-	if req.node in wnodes :
-		wnodes[req.node].kill()
+	if key in wnodes :
+		wnodes[key].kill()
 
 	# create entry on wnodes with 
-	# key : req.node 	node name
+	# key : key 	node name
 	# value : process 	relative process 
-	wnodes[req.node] = process
+	wnodes[key] = process
+
 	# return true if process is alive, false otherwise
 	return RunNodeResponse(process.poll() == None)
 
@@ -76,13 +94,19 @@ def handle_kill_node (req):
 	# use 'rosnode kill' command to kill node, ros takes care to do this dirty job
 	cmd = ['rosnode', 'kill', req.node]
 	kill = Popen (cmd, stdout = PIPE, stderr = PIPE)
-	# wait util kill process exspire
+	# wait util kill process expire
 	kill.wait()
+	# sleep is necessary because wait doesn't guarantee subprocess join
+	sleep(2)
 	# check if node killed is a wnode, if it is remove this from wnodes
 	# check also if relative process still alive, in this case kill it too
 	if req.node in wnodes :
 		if wnodes[req.node].poll() == None:
 			wnodes[req.node].kill()
+			# refresh running node list
+			cmd = ['rosnode', 'cleanup']
+			Popen (cmd,stdin = PIPE, stdout = PIPE, stderr = PIPE).communicate('y')
+
 		del wnodes[req.node]
 
 	return KillNodeResponse(True)
