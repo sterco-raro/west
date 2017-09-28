@@ -91,6 +91,9 @@ def handle_run_node (req):
 	return RunNodeResponse(process.poll() == None)
 
 def handle_kill_node (req):
+	# we make sure the node name begins with the backslash
+	if req.node[0] != '/':
+		req.node = '/' + req.node
 	# use 'rosnode kill' command to kill node, ros takes care to do this dirty job
 	cmd = ['rosnode', 'kill', req.node]
 	kill = Popen (cmd, stdout = PIPE, stderr = PIPE)
