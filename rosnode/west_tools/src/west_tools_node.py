@@ -77,15 +77,19 @@ def handle_run_node (req):
 	# after new node launch, we require again a set of running nodes
 	# and make the difference (set difference) with this and the previous one
 	# to get the new entry, this is a new key for wnode
-	key = (running_nodes() - nodes).pop()
-	# check if node to launch is already running
-	if key in wnodes :
-		wnodes[key].kill()
-
+	s = (running_nodes() - nodes)
+	key = None
+	if len(s) == 0 :
+		for k in wnodes :
+			if wnodes[k].poll() != None :
+				key = k
+	else :
+		key = s.pop()
 	# create entry on wnodes with 
 	# key : key 	node name
 	# value : process 	relative process 
-	wnodes[key] = process
+	if key != None :
+		wnodes[key] = process
 
 	# return true if process is alive, false otherwise
 	return RunNodeResponse(process.poll() == None)
@@ -119,6 +123,9 @@ def handle_wnode_list (req):
 	return WNodeListResponse(wnodes.keys())
 
 def handle_wnode_input (req):
+	# we make sure the node name begins with the backslash
+	if req.node[0] != '/':
+		req.node = '/' + req.node
 	# check if node is present on wnodes and if it is still alive
 	# then is possible to write into its standard input
 	if req.node in wnodes :
