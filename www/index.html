@@ -2,7 +2,7 @@
 <html>
 <head>
 
-  <title>west</title>
+  <title>West</title>
   <meta charset="utf-8">
 
   <!-- User styles -->
@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 
   <!-- User styles for special fonts -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 
 
@@ -22,17 +21,14 @@
 
 <body>
 
-  <div id="main" class="w3-container">
+  <div id="main" class="w3-container" style="display: block;">
 
-    <section>
-      <header style="display: inline-block;">
-        <h2>West</h2>
-        <h4>a simple and clean web interface to control a remote ros machine</h4>
-      </header>
-      <i id="refresh" class="glyphicon glyphicon-refresh w3-xlarge" onclick="refresh_page(); return false;"></i>
-      <hr>
-      <br>
-    </section>
+    <header style="display: inline-block;">
+      <h2>West</h2>
+      <h4>a simple and clean web interface to control a remote ros machine</h4>
+    </header>
+    <i id="refresh" class="glyphicon glyphicon-refresh w3-xlarge" style="display: none;" onclick="refresh_page(); return false;"></i>
+    <hr>
 
     <section id="connection">
       <form>
@@ -42,82 +38,174 @@
         <label> Port</label>
         <input class="w3-input w3-hover-cyan" type="text" name="port" placeholder="listening port" maxlength="20" value="9090" required>
         
-        <br>
         <h4 class="w3-bar-item w3-button w3-hover-cyan " onclick="validate_connection(this.parentNode); return false;">
           Connect <i class="glyphicon glyphicon-menu-right w3-large"></i>
         </h4>
       </form>
       <hr>
-      <br>
     </section>
 
-    <div id="app_page" style="display: none;">
+
+
+    <div id="app_page" class="w3-container" style="display: none;">
 
       <section id="controls">
 
-        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('running', this); return false;">
-          Active nodes <i class="glyphicon glyphicon-fire w3-xlarge"></i>
+        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('services', this, update_services); return false;">
+          Services <i class="glyphicon glyphicon-fire w3-xlarge"></i>
         </h4>
         
-        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('packages', this); return false;">
+        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('launch', this, update_launch); return false;">
           Launch <i class="glyphicon glyphicon-plane w3-xlarge"></i>
         </h4>
 
+        <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('wnodes', this, update_wnodes); return false;">
+          West Nodes <i class="glyphicon glyphicon-leaf w3-xlarge"></i>
+        </h4>
+
         <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls('logs', this); return false;">
-          Subscription <i class="glyphicon glyphicon-leaf w3-xlarge"></i>
+          Subscription <i class="glyphicon glyphicon-list w3-xlarge"></i>
         </h4>
 
       </section>
 
-      <section id="running">
+      <section id="services" style="display: none;">
 
-        <span id="running_list">
+        <span id="services_1" style="display: none;">
+          <h2> Chose node from launch service</h2>
           <ul class="w3-ul w3-card-4 scroll"></ul>
         </span>
 
-        <span id="param_section">
+        <span id="services_2" style="display: none;">
           <h2></h2>
-          <form id="param_form">
-            <span></span>
-            <br>
-            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="clear_param_section(); return false;">
+          <ul class="w3-ul w3-card-4 scroll"></ul>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="prev_section('services_', '1', '2'); return false;">
               <i class="glyphicon glyphicon-menu-left w3-large"></i> Back
-            </h4>
-            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_param_section(this.parentNode); return false;">
-              Call <i class="glyphicon glyphicon-menu-right w3-large"></i>
-            </h4>
+          </h4>
+        </span>
+
+        <span id="services_3" style="display: none;">
+          <h2></h2>
+          <form id="services_3_form">
+            <span></span>
           </form>
+
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="prev_section('services_', '2', '3'); return false;">
+            <i class="glyphicon glyphicon-menu-left w3-large"></i> Back
+          </h4>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_services_3(); return false;">
+            Call <i class="glyphicon glyphicon-menu-right w3-large"></i>
+          </h4>
+
         </span>
           
-        <span id="result">
-          <h2> Result : </h2>
+        <span id="services_4" style="display: none;">
+          <h2></h2>
+          <ul class="w3-ul w3-card-4 scroll"></ul>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls(); clear_services(); return false;">
+              Close <i class="glyphicon glyphicon-close w3-large"></i>
+          </h4>
+        </span>
+
+      </section>
+
+      <section id="launch" style="display: none;">
+        
+        <span id="launch_1" style="display: none;">
+          <h2> Chose package and launch a new node</h2>
           <ul class="w3-ul w3-card-4 scroll"></ul>
         </span>
 
-        <hr>
-        <br>
+        <span id="launch_2" style="display: none;">
+          <h2></h2>
+          <ul class="w3-ul w3-card-4 scroll"></ul>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="prev_section('launch_', '1', '2'); return false;">
+              <i class="glyphicon glyphicon-menu-left w3-large"></i> Back
+          </h4>
+        </span>
+
+        <span id="launch_3" style="display: none;">
+          <h2></h2>
+          <form id="launch_3_form">
+            <span></span>
+          </form>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="prev_section('launch_', '2', '3'); return false;">
+              <i class="glyphicon glyphicon-menu-left w3-large"></i> Back
+          </h4>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_launch_3(); return false;">
+              Run <i class="glyphicon glyphicon-menu-right w3-large"></i>
+          </h4>
+        </span>
+
+        <span id="launch_4" style="display: none;">
+          <h2></h2>
+          <ul class="w3-ul w3-card-4 scroll"></ul>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="switch_controls(); clear_launch(); return false;">
+              Close <i class="glyphicon glyphicon-close w3-large"></i>
+          </h4>
+        </span>
+
       </section>
 
-      <section id="logs">
+      <section id="wnodes" style="display: none;">
+
+        <span id="wnodes_1" style="display: none;">
+          <h2> Chose node to give it an input, or kill it</h2>
+          <ul class="w3-ul w3-card-4 scroll"></ul>
+        </span>
+
+        <span id="wnodes_2" style="display: none;">
+          <h2></h2>
+          <form id="wnodes_2_form">
+            <span>
+              <label>input</label>
+              <input type="text" name="input_string" class="w3-input w3-hover-cyan" placeholder="input string">
+            </span>
+          </form>
+            
+            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_wnodes_2('^[[D'); return false;">
+                <i class="glyphicon glyphicon-arrow-left w3-large"></i>
+            </h4>
+            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_wnodes_2('^[[A'); return false;">
+                <i class="glyphicon glyphicon-arrow-up w3-large"></i>
+            </h4>
+            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_wnodes_2('^[[C'); return false;">
+                <i class="glyphicon glyphicon-arrow-right w3-large"></i>
+            </h4>
+            <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_wnodes_2('^[[B'); return false;">
+                <i class="glyphicon glyphicon-arrow-down w3-large"></i>
+            </h4>
+            
+
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="prev_section('wnodes_', '1', '2'); return false;">
+              <i class="glyphicon glyphicon-menu-left w3-large"></i> Back
+          </h4>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="validate_wnodes_2(); return false;">
+            Send string <i class="glyphicon glyphicon-menu-right w3-large"></i>
+          </h4>
+          <h4 class="w3-bar-item w3-button w3-hover-cyan" onclick="kill_wnodes_listener(); return false;">
+            Kill <i class="glyphicon glyphicon-remove w3-large"></i>
+          </h4>
+        </span>
+
+      </section>
+
+
+      <section id="logs" style="display: none;">
+        <h2> Logs from rosout</h2>
         <ul class="w3-ul w3-card-4 scroll"></ul>
         <hr>
-        <br>
       </section>
-
-      <section id="packages">
-        <ul class="w3-ul w3-card-4 scroll"></ul>
-        <hr>
-        <br>
-      </section>
-
 
       <div id="snackbar"></div>
 
     </div> <!-- id="app_page" -->
-  </div>
+
+  </div> <!-- id="main" -->
 
   <!-- App code -->
   <script type="text/javascript" src="js/app.js"></script>
+  <script type="text/javascript" src="js/utility.js"></script>
 
 </body>
 </html>
