@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-#  All credits to http://blog.wachowicz.eu
+# all credits to Programming Memoirs: http://blog.wachowicz.eu
 #
 
 import sys
@@ -168,4 +168,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # acquire the socket
-    s.activate_server() 
+    s.activate_server()
