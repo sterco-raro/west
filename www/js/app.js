@@ -165,8 +165,8 @@ function get_services_2_list_builder ()
 function services_1_listener_builder ()
 {
   return function (event) {
-    // services_2 -> h2
-    document.getElementById('services_2').children[0].innerHTML = 'Choice service from node : ' + event.target.innerHTML;
+    // services_2 -> h3
+    document.getElementById('services_2').children[0].innerHTML = 'Node : ' + event.target.innerHTML + '<br> Choose a service ';
     // services_2 -> ul
     document.getElementById('services_2').children[1].innerHTML = '';
 
@@ -181,7 +181,7 @@ function services_2_listener_builder (ros)
 {
   return function (event) {
     toggle_visibility('services_2', 'none');
-    // retrive service type and params by name
+    // retrieve service type and params by name
     ros.getServiceType(event.target.innerHTML, (type) => {
       ros.getServiceRequestDetails(type, (typeDetails) => {
         ros.getServiceResponseDetails(type, (responseDetails) => {
@@ -197,7 +197,7 @@ function build_services_3 (name, details, response)
 {
   document.getElementById('services_4').children[1].setAttribute('fieldname', response[0]);
   let services_3 = document.getElementById('services_3');
-  // services_3 -> h2
+  // services_3 -> h3
   services_3.children[0].innerHTML = 'Service name : ' + name + '<br> Service type : ' + details.type;
 
   let form = document.getElementById('services_3_form');
@@ -273,7 +273,7 @@ function validate_services_3 ()
 
 function build_services_4_success (result)
 {
-  // service_4 -> h2
+  // service_4 -> h3
   document.getElementById('services_4').children[0].innerHTML = 'Result :';
   // service_4 -> ul
   let ul = document.getElementById('services_4').children[1];
@@ -315,7 +315,7 @@ function build_services_4_success (result)
 
 function build_services_4_error (error)
 {
-  // service_4 -> h2
+  // service_4 -> h3
   document.getElementById('services_4').children[0].innerHTML = 'Error : service NOT called';
   document.getElementById('services_4').children[1].innerHTML = error;
 }
@@ -331,12 +331,12 @@ function clear_services ()
   // services_1 -> ul
   document.getElementById('services_1').children[1].innerHTML = '';
 
-  // services_2 -> h2
+  // services_2 -> h3
   document.getElementById('services_2').children[0].innerHTML = '';
   // services_2 -> ul
   document.getElementById('services_2').children[1].innerHTML = '';
 
-  // services_3 -> h2
+  // services_3 -> h3
   document.getElementById('services_3').children[0].innerHTML = '';
   // services_3_form -> span
   form = document.getElementById('services_3_form');
@@ -344,7 +344,7 @@ function clear_services ()
   form.removeAttribute('servicename');
   form.removeAttribute('servicetype');
 
-  // services_4 -> h2
+  // services_4 -> h3
   document.getElementById('services_4').children[0].innerHTML = '';
   // services_4_form -> ul
   document.getElementById('services_4').children[1].innerHTML = '';
@@ -380,7 +380,7 @@ function get_launch_1_list_builder ()
         )
       },
       (error) => {
-        show_snackbar('Couldn\'t retrive available packages');
+        show_snackbar('Couldn\'t retrieve available packages');
       }
     );
   }
@@ -395,7 +395,7 @@ function get_launch_2_list_builder ()
       'west_tools/NodeList',
       { pack: pack },
       (result) => {
-        // set attribute on form to retrive package name
+        // set attribute on form to retrieve package name
         document.getElementById('launch_3_form').setAttribute('pack', pack);
         update_list(
           // services_2 -> ul
@@ -414,8 +414,8 @@ function get_launch_2_list_builder ()
 function launch_1_listener_builder ()
 {
   return function (event) {
-    // launch_2 -> h2
-    document.getElementById('launch_2').children[0].innerHTML = 'Choice node from package : ' + event.target.innerHTML;
+    // launch_2 -> h3
+    document.getElementById('launch_2').children[0].innerHTML = 'Package : ' + event.target.innerHTML + '<br> Choose a node';
     // launch_2 -> ul
     document.getElementById('launch_2').children[1].innerHTML = '';
 
@@ -441,38 +441,21 @@ function launch_2_listener_builder (ros)
 function build_launch_3 (pack, node)
 {
   let launch_3 = document.getElementById('launch_3');
-  // launch_3 -> h2
-  launch_3.children[0].innerHTML = 'Package name : ' + pack + '<br> Node name : ' + node;
+  // launch_3 -> h3
+  launch_3.children[0].innerHTML = 'Package : ' + pack + '<br> Node : ' + node;
 }
 
 function validate_launch_3 ()
 {
-
+  toggle_visibility('launch_3', 'none');
   // call service to launch new node
   call_service(
     '/run_node',
     '/west_tools/RunNode',
     { pack: form.getAttribute('pack'), node: form.getAttribute('node') },
-    build_launch_4_success,
-    build_launch_4_error
+    (result) => { clear_launch(); show_snackbar('Node launched successfully'); },
+    (error) => { clear_launch(); show_snackbar('Error : node NOT launched'); }
   );
-
-  toggle_visibility('launch_3', 'none')
-  toggle_visibility('launch_4', 'block')
-}
-
-function build_launch_4_success (result)
-{
-  // launch_4 -> h2
-  document.getElementById('launch_4').children[0].innerHTML = 'Node launched successfully';
-  document.getElementById('launch_4').children[1].innerHTML = result;
-}
-
-function build_launch_4_error (error)
-{
-  // launch_4 -> h2
-  document.getElementById('launch_4').children[0].innerHTML = 'Error : node NOT launched';
-  document.getElementById('launch_4').children[1].innerHTML = error;
 }
 
 function clear_launch ()
@@ -481,28 +464,22 @@ function clear_launch ()
   toggle_visibility('launch_1', 'none');
   toggle_visibility('launch_2', 'none');
   toggle_visibility('launch_3', 'none');
-  toggle_visibility('launch_4', 'none');
 
   // launch_1 -> ul
   document.getElementById('launch_1').children[1].innerHTML = '';
 
-  // launch_2 -> h2
+  // launch_2 -> h3
   document.getElementById('launch_2').children[0].innerHTML = '';
   // launch_2 -> ul
   document.getElementById('launch_2').children[1].innerHTML = '';
 
-  // launch_3 -> h2
+  // launch_3 -> h3
   document.getElementById('launch_3').children[0].innerHTML = '';
   // launch_3_form -> span
   form = document.getElementById('launch_3_form');
   form.children[0].innerHTML = '';
   form.removeAttribute('pack');
   form.removeAttribute('node');
-
-  // launch_4 -> h2
-  document.getElementById('launch_4').children[0].innerHTML = '';
-  // launch_4_form -> ul
-  document.getElementById('launch_4').children[1].innerHTML = '';
 }
 
 /* ------------------------------------------------------------------------------------------
@@ -535,7 +512,7 @@ function get_wnodes_1_list_builder ()
         )
       },
       (error) => {
-        show_snackbar('Couldn\'t retrive wnodes');
+        show_snackbar('Couldn\'t retrieve wnodes');
       }
     );
   }
@@ -560,7 +537,7 @@ function validate_wnodes_2 (input)
 function wnodes_1_listener_builder ()
 {
   return function (event) {
-    // wnodes_2 -> h2
+    // wnodes_2 -> h3
     document.getElementById('wnodes_2').children[0].innerHTML = 'Wnode selected : ' + event.target.innerHTML;
 
     toggle_visibility('wnodes_1', 'none');
@@ -579,7 +556,7 @@ function clear_wnodes ()
   // wnodes_1 -> ul
   document.getElementById('wnodes_1').children[1].innerHTML = '';
 
-  // wnodes_2 -> h2
+  // wnodes_2 -> h3
   document.getElementById('wnodes_2').children[0].innerHTML = '';
 
   (document.getElementById('wnodes_2_form')).removeAttribute('wnode');
@@ -598,10 +575,11 @@ function kill_wnodes_listener ()
     '/west_tools/KillNode',
     { node: (document.getElementById('wnodes_2_form')).getAttribute('wnode') },
     (result) => {
-      show_snackbar('Node killed successfully');
       clear_wnodes();
+      show_snackbar('Node killed successfully');
     },
     (error) => {
+      clear_wnodes();
       show_snackbar('Node NOT killed!');
     }
   );
