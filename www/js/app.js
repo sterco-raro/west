@@ -59,6 +59,8 @@ function validate_connection (form)
     if (form.elements[i].name && form.elements[i].value)
       conn_data[form.elements[i].name] = form.elements[i].value;
   }
+  // rosbridge port is 9090
+  conn_data.port = '9090';
 
   if (conn_data.address && conn_data.port)
   {

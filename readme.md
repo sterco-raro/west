@@ -33,7 +33,7 @@ roscore
 ```
 - There's a handy script to launch both rosbridge_websocket and west_tools, all output will be in *logs/*
 ```
-bash west_launch.sh
+bash west-cli start
 ```
 - From the root west folder run the python webserver giving a *port* number as argument (between 1024 and 49151)
 ```
@@ -46,9 +46,19 @@ Open your favorite web browser, then
 - Visit the url **ip**:**port** where
     + *ip* is the address of the python server and
     + *port* is the port number assigned before
-    + example on localhost: 127.0.0.1:9090
-- Enter rosbridge ip and port to connect to ros (usually port is **9090**)
+    + example on localhost: 127.0.0.1:9999
+- Enter rosbridge ip to connect to ros
 - Now have fun launching and killing nodes, or calling services!
+
+#### close
+- 
+```
+bash west-cli check
+```
+- 
+```
+bash west-cli stop
+```
 
 ### Troubleshooting
 

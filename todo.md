@@ -9,8 +9,8 @@
 
 ### project goals
 
-- [ ] We want to communicate with the node by standard input
-- [ ] ?add service for retrive running nodes?
+- [x] We want to communicate with the node by standard input
+- [-] ?add service for retrive running nodes?
 - [x] maintain nodes track
 - [x] new service to get a list of nodes you can communicate with
 - [x] new service for send message to node
