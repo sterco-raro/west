@@ -50,12 +50,12 @@ Open your favorite web browser, then
 - Enter rosbridge ip to connect to ros
 - Now have fun launching and killing nodes, or calling services!
 
-#### close
-- 
+##### close
+- To check if West is running
 ```
 bash west-cli check
 ```
-- 
+- To stop all running process spawned by West
 ```
 bash west-cli stop
 ```
