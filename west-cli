@@ -1,30 +1,92 @@
 #!/bin/bash
-
-# launch rosbridge_server and west_tools_node nodes and redirect
-# their standard output and error to a file
-if [[ "$1" == "start" ]]; then
-  [[ ! -d logs ]] && mkdir logs
-  
-  rm -rf logs/*
-  
-  stdbuf -oL 												\
-    roslaunch rosbridge_server rosbridge_websocket.launch \
-    1>logs/rosbridge_websocket.out 						\
-    2>logs/rosbridge_websocket.err &
-  
-  stdbuf -oL 												\
-    rosrun west_tools west_tools_node.py					\
-    1>logs/west_tools_node.out 							\
-    2>logs/west_tools_node.err &
-
 #
-elif [[ "$1" == "check" ]]; then
-  rosnode list
+# west-cli: Handles project lifecycle by managing the necessary ROS nodes.
+STR_DESCRIPTION="Handles project lifecycle by managing the necessary ROS nodes."
+STR_USAGE="""Usage: $0 COMMAND
+$STR_DESCRIPTION
 
-#
-elif [[ "$1" == "stop" ]]; then
-  rosnode kill /west_tools_server /rosapi /rosbridge_websocket
+Available COMMANDs:
+	start:  launch ROS nodes: rosbridge and west_tools.
+	status: print a list of running nodes.
+	stop:   kill previously launched nodes."""
 
+# Command: START
+# Launches rosbridge websocket server and our west_tools node
+if test "$1" == "start"; then
+
+	# Create a 'logs' folder in the current directory if missing
+	test ! -d logs && mkdir logs
+
+	# Clear old logs
+	rm logs/*
+
+	# Start ros nodes in the background, with standard buffers redirection
+	# rosbridge websocket server
+	stdbuf --output=L 											\
+		roslaunch rosbridge_server rosbridge_websocket.launch 	\
+		1>logs/rosbridge_websocket.out 							\
+		2>logs/rosbridge_websocket.err 							&
+	# west_tools
+	stdbuf --output=L 							\
+		rosrun west_tools west_tools_node.py 	\
+		1>logs/west_tools_node.out 				\
+		2>logs/west_tools_node.err 				&
+
+# Command: STATUS
+# Prints a list of all running ros nodes
+elif test "$1" == "status"; then
+	# Get a list of all ROS nodes
+	nodes_list=$(rosnode list)
+
+	# Node: rosbridge
+	echo -n "rosbridge: "
+	if test -z "$(grep --only-matching rosbridge <<< $nodes_list)"; then
+		echo "STOPPED"
+	else
+		echo "RUNNING";
+	fi
+
+	# Node: west-tools
+	echo -n "west-tools: "
+	if test -z "$(grep --only-matching west_tools <<< $nodes_list)"; then
+		echo "STOPPED"
+	else
+		echo "RUNNING";
+	fi
+
+	# Delete ROS nodes list
+	unset nodes_list
+
+# Command: STOP
+# Kills rosbridge and west_tools
+elif test "$1" == "stop"; then
+
+	output=""
+	output_rosapi=""
+
+	# Node: west_tools
+	echo -n "Stopping node \"west_tools\": "
+	output=$(rosnode kill /west_tools_server | grep --only-matching "killed")
+	if test -z "$output"; then
+		echo "ERROR"
+	else
+		echo "OK"
+	fi
+
+	# Node: rosbridge
+	echo -n "Stopping node \"rosbridge\": "
+	output=$(rosnode kill /rosbridge_websocket | grep --only-matching "killed")
+	output_rosapi=$(rosnode kill /rosapi | grep --only-matching "killed")
+	if test -z "$output" || test -z "$output_rosapi"; then
+		echo -n "ERROR"
+	else
+		echo "OK"
+	fi
+
+	unset output output_rosapi
+
+# Script invoked with wrong arguments, print usage
 else
-  echo "Wrong arguments"
+	echo "$STR_USAGE"
+	exit 1
 fi
