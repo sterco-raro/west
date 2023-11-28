@@ -7,8 +7,13 @@ $STR_DESCRIPTION
 
 Available COMMANDs:
 	start:  launch ROS nodes: rosbridge and west_tools.
-	status: print a list of running nodes.
+	status: print information about rosmaster and project-related nodes.
 	stop:   kill previously launched nodes."""
+
+# Utility: Check if there is a running instance of ROS Master node
+function is_master_running {
+	test -n "$(ps aux | grep rosmaster | grep --invert-match grep)"
+}
 
 # Command: START
 # Launches rosbridge websocket server and our west_tools node
@@ -17,73 +22,87 @@ if test "$1" == "start"; then
 	# Create a 'logs' folder in the current directory if missing
 	test ! -d logs && mkdir logs
 
-	# Clear old logs
-	rm logs/*
-
-	# Start ros nodes in the background, with standard buffers redirection
-	# rosbridge websocket server
-	stdbuf --output=L 											\
-		roslaunch rosbridge_server rosbridge_websocket.launch 	\
-		1>logs/rosbridge_websocket.out 							\
-		2>logs/rosbridge_websocket.err 							&
-	# west_tools
-	stdbuf --output=L 							\
-		rosrun west_tools west_tools_node.py 	\
-		1>logs/west_tools_node.out 				\
-		2>logs/west_tools_node.err 				&
+	# Start ROS nodes through the launch file, in the background and with buffers redirection
+	# NOTE: We're logging roslaunch output because by default launch files log stdout to $ROS_HOME/logs and stderr to the screen.
+	stdbuf --output=L 								\
+		roslaunch west_tools west_tools_env.launch 	\
+		1>logs/west_tools.out 						\
+		2>logs/west_tools.err 						&
 
 # Command: STATUS
-# Prints a list of all running ros nodes
+# Prints informations about rosmaster, rosbridge, west_tools
 elif test "$1" == "status"; then
 	# Get a list of all ROS nodes
-	nodes_list=$(rosnode list)
+	nodes_list=$(rosnode list 2>/dev/null)
 
-	# Node: rosbridge
-	echo -n "rosbridge: "
-	if test -z "$(grep --only-matching rosbridge <<< $nodes_list)"; then
-		echo "STOPPED"
+	# Check ROS Master status before everything else
+	if ! is_master_running; then
+		echo "Master:		Stopped"
+		echo "rosbridge:	Stopped"
+		echo "west_tools:	Stopped"
 	else
-		echo "RUNNING";
+		echo "Master:		Running"
+		# Node: rosbridge
+		if test -z "$(grep --only-matching rosbridge <<< $nodes_list)"; then
+			echo "rosbridge:	Stopped"
+		else
+			echo "rosbridge:	Running";
+		fi
+		# Node: west-tools
+		if test -z "$(grep --only-matching west_tools <<< $nodes_list)"; then
+			echo "west_tools:	Stopped"
+		else
+			echo "west_tools:	Running";
+		fi
 	fi
 
-	# Node: west-tools
-	echo -n "west-tools: "
-	if test -z "$(grep --only-matching west_tools <<< $nodes_list)"; then
-		echo "STOPPED"
-	else
-		echo "RUNNING";
-	fi
-
-	# Delete ROS nodes list
-	unset nodes_list
+	exit 0
 
 # Command: STOP
 # Kills rosbridge and west_tools
 elif test "$1" == "stop"; then
 
-	output=""
-	output_rosapi=""
+	# Exit early if ROS Master is not running
+	if ! is_master_running; then
+		exit 0;
+	fi
 
 	# Node: west_tools
 	echo -n "Stopping node \"west_tools\": "
-	output=$(rosnode kill /west_tools_server | grep --only-matching "killed")
+	output=$(rosnode kill /west_tools_server 2>/dev/null | grep --only-matching "killed")
 	if test -z "$output"; then
 		echo "ERROR"
 	else
 		echo "OK"
 	fi
 
-	# Node: rosbridge
+	# Node: rosbridge and rosapi
 	echo -n "Stopping node \"rosbridge\": "
-	output=$(rosnode kill /rosbridge_websocket | grep --only-matching "killed")
-	output_rosapi=$(rosnode kill /rosapi | grep --only-matching "killed")
+	output=$(rosnode kill /rosbridge_websocket 2>/dev/null | grep --only-matching "killed")
+	output_rosapi=$(rosnode kill /rosapi 2>/dev/null | grep --only-matching "killed")
 	if test -z "$output" || test -z "$output_rosapi"; then
-		echo -n "ERROR"
+		echo "ERROR"
 	else
 		echo "OK"
 	fi
 
-	unset output output_rosapi
+	# ROS Master
+	echo -n "Stopping ROS Master: "
+	rosout_pid=$(pgrep rosout)
+	roslaunch_pid=$(pgrep roslaunch)
+	rosmaster_pid=$(pgrep rosmaster)
+	if test -n $rosout_pid; then
+		kill -9 $rosout_pid 2>/dev/null
+	fi
+	if test -n $roslaunch_pid; then
+		kill -9 $roslaunch_pid 2>/dev/null
+	fi
+	if test -n $rosmaster_pid; then
+		kill -9 $rosmaster_pid 2>/dev/null
+	fi
+	echo "OK"
+
+	exit 0
 
 # Script invoked with wrong arguments, print usage
 else

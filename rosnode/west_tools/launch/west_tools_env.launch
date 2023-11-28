@@ -1,0 +1,4 @@
+<launch>
+	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+	<node name="west_tools_server" pkg="west_tools" type="west_tools_node.py" required="true" />
+</launch>
