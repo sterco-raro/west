@@ -1,56 +1,95 @@
 #!/usr/bin/env python
 # license removed for brevity
 
+import os
 import rospy
 from time import sleep
 from west_tools.srv import *
 from subprocess import Popen, PIPE
 
-# dictionary that keeps all nodes lauched by West, to which
-# is possible forward string as standard input
+# ----- Globals ----------------------------------------------------------------
+
+# Package list cache
+ROS_PKGS_CACHE = "/tmp/ros-pkgs-list.west"
+
+# Set of nodes launched by West
 wnodes = {}
 
-def running_nodes (): # utility
-	# obtain list of running nodes
-	cmd = ['rosnode', 'list']
-	nodes = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
-	nodes = nodes.split('\n')
+# ----- Utils ------------------------------------------------------------------
 
-	# now @nodes is a list of running nodes on ros, and we trasform it in a set
+def get_active_nodes ():
+	"""Query ROS and return a Set of currently active nodes (key: node name, value: ?)"""
+
+	# Get a list of all running nodes
+	cmd = [ "rosnode", "list" ]
+
+	# Create a new child process and launch it with ".communicate()".
+	# Returns a tuple with (stdout, stderr).
+	# Parse the output to obtain a list of active ROS nodes.
+	nodes = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip().split('\n')
+
+	# TODO Later on we'll do (newset - oldset) after launching a new node,
+	# FIXME I think we skip packages that spawn multiple nodes (later, inside handle_node_list)
 	return set(nodes)
 
-def handle_pack_list (req):
-	# spawn rospack process to retrive all packages in ros and put the result in a list
-	cmd = ['rospack', 'list-names']
-	packs = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
-	packs = packs.split('\n')
+# ----- Services handlers ------------------------------------------------------
 
-	# now @packs is a list of available package on ros workspace
-	return PackListResponse(packs)
+def handle_pack_list (req):
+    """Return a list of all ROS packages in the system"""
+    packages = None
+    try:
+        with open(ROS_PKGS_CACHE, "r") as cache:
+            # Try to load cached list
+            packages = cache.read()
+    except Exception as err:
+        with open(ROS_PKGS_CACHE, "w") as cache:
+            # Get packages list
+            cmd = [ "rospack", "list-names" ]
+            packages = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip()
+            # Cache a copy of the list
+            cache.write(packages)
+    return PackListResponse(packages.split('\n'))
 
 def handle_node_list (req):
-	# obtain path where to look for nodes
-	cmd = ['rospack', 'find', req.pack]
-	ros_path = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
+	# TODO docstring
+	# FIXME must be called multiple times when in web UI, why?
 
-	cmd = ['catkin_find', '--first-only', '--without-underlays', '--libexec', req.pack]
-	catkin_path = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
+	# Find package-related folders
+	cmd = [ "rospack", "find", req.pack ]
+	path_rospack = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip()
 
-	# check if we found at least one valid path, otherwise return a empty list
-	if (ros_path + catkin_path) == '':
+	cmd = [ "catkin_find", "--first-only", "--without-underlays", "--libexec", req.pack ]
+	path_catkin = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip()
+
+	if path_rospack + path_catkin == "":
 		return NodeListResponse()
 
-	# spawn find process to retrive a nodes list
-	cmd = ['find', '-L', ros_path, catkin_path, '-type', 'f', '-perm', '/a+x', '-not', '-path', '\'*/\.*\'']
-	nodes = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
-	nodes = (nodes.split('\n')); # obtain an array of string
-	# only check on actual lists, not the empty set
-	if len(nodes) > 0:
-		# take the last string that follow last '/' char
-		nodes = map(lambda x: x.rsplit('/', 1)[1], nodes)
-		
-	# now @nodes is a list that contains the ros nodes names
+	# Find nodes list
+	cmd = [ "find", "-L", path_rospack, path_catkin, "-type", "f", "-perm", "/a+x", "-not", "-path", "'*/\.*'" ]
+	filepaths = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip().split('\n')
+
+	if len(filepaths) == 0:
+		return NodeListResponse([])
+
+	# Extract node names from filepaths
+	nodes = []
+	splitted = None
+	for name in filepaths:
+		# Split one time using '/' as separator
+		splitted = name.rsplit('/', 1)
+		if len(splitted) == 0: continue
+		# Store last element
+		nodes.append( splitted[ len(splitted) - 1 ] )
+
 	return NodeListResponse(nodes)
+
+
+
+
+
+
+
+
 
 def handle_service_list (req):
 	# obtain relative node service list by 'rosnode info' command
@@ -68,7 +107,7 @@ def handle_service_list (req):
 
 def handle_run_node (req):
 	# get a set of running nodes
-	nodes = running_nodes()
+	nodes = get_active_nodes()
 
 	# use 'rosrun' command with package and nodes given in service request
 	cmd = ['rosrun', req.pack, req.node]
@@ -77,7 +116,7 @@ def handle_run_node (req):
 	# after new node launch, we require again a set of running nodes
 	# and make the difference (set difference) with this and the previous one
 	# to get the new entry, this is a new key for wnode
-	s = (running_nodes() - nodes)
+	s = (get_active_nodes() - nodes)
 	key = None
 	if len(s) == 0 :
 		for k in wnodes :
