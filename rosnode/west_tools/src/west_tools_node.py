@@ -20,53 +20,52 @@ wnodes = {}
 def get_active_nodes ():
 	"""Query ROS and return a Set of currently active nodes (key: node name, value: ?)"""
 
-	# Get a list of all running nodes
+	# Get a list of active ROS nodes
 	cmd = [ "rosnode", "list" ]
-
-	# Create a new child process and launch it with ".communicate()".
-	# Returns a tuple with (stdout, stderr).
-	# Parse the output to obtain a list of active ROS nodes.
-	nodes = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip().split('\n')
+	nodes = launch_subprocess(cmd).split('\n')
 
 	# TODO Later on we'll do (newset - oldset) after launching a new node,
 	# FIXME I think we skip packages that spawn multiple nodes (later, inside handle_node_list)
 	return set(nodes)
 
+def launch_subprocess (cmd):
+	"""Launch a child process and return its (string) output"""
+	return Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip()
+
 # ----- Services handlers ------------------------------------------------------
 
 def handle_pack_list (req):
-    """Return a list of all ROS packages in the system"""
-    packages = None
-    try:
-        with open(ROS_PKGS_CACHE, "r") as cache:
-            # Try to load cached list
-            packages = cache.read()
-    except Exception as err:
-        with open(ROS_PKGS_CACHE, "w") as cache:
-            # Get packages list
-            cmd = [ "rospack", "list-names" ]
-            packages = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip()
-            # Cache a copy of the list
-            cache.write(packages)
-    return PackListResponse(packages.split('\n'))
+	"""Return a list of all ROS packages in the system"""
+	packages = None
+	try:
+		with open(ROS_PKGS_CACHE, "r") as cache:
+			# Try to load cached list
+			packages = cache.read()
+	except Exception as err:
+		with open(ROS_PKGS_CACHE, "w") as cache:
+			# Get packages list
+			cmd = [ "rospack", "list-names" ]
+			packages = launch_subprocess(cmd)
+			# Cache a copy of the list
+			cache.write(packages)
+	return PackListResponse(packages.split('\n'))
 
 def handle_node_list (req):
-	# TODO docstring
-	# FIXME must be called multiple times when in web UI, why?
-
+	"""Return a list of all nodes available in the given package"""
+    # FIXME must be called multiple times when in web UI, why?
 	# Find package-related folders
 	cmd = [ "rospack", "find", req.pack ]
-	path_rospack = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip()
+	path_rospack = launch_subprocess(cmd).strip()
 
 	cmd = [ "catkin_find", "--first-only", "--without-underlays", "--libexec", req.pack ]
-	path_catkin = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip()
+	path_catkin = launch_subprocess(cmd).strip()
 
 	if path_rospack + path_catkin == "":
 		return NodeListResponse()
 
-	# Find nodes list
+	# Find node files in folders
 	cmd = [ "find", "-L", path_rospack, path_catkin, "-type", "f", "-perm", "/a+x", "-not", "-path", "'*/\.*'" ]
-	filepaths = Popen( cmd, stdout = PIPE, stderr = PIPE ).communicate()[0].strip().split('\n')
+	filepaths = launch_subprocess(cmd).strip().split('\n')
 
 	if len(filepaths) == 0:
 		return NodeListResponse([])
@@ -83,27 +82,37 @@ def handle_node_list (req):
 
 	return NodeListResponse(nodes)
 
-
-
-
-
-
-
-
-
 def handle_service_list (req):
-	# obtain relative node service list by 'rosnode info' command
-	cmd = ['rosnode', 'info', req.node]
-	services = (Popen (cmd, stdout = PIPE, stderr = PIPE).communicate ()[0]).strip ()
-	services = ((services.split('Services: \n')[1]).split('\n\n')[0]).split('\n')
-	
-	# only check on actual lists, not the empty set
-	if len(services) > 0:
-		# take the string that follow each '* ' char
-		services = map(lambda x: x.rsplit('* ')[1], services)
-	
-	# now @services is a list that contains node related services
+	# TODO docstring
+
+	# Get services list for the given node
+	cmd = [ "rosnode", "info", req.node ]
+	output = launch_subprocess(cmd)
+
+	with open("/tmp/culo", "w") as fout:
+		fout.write(output)
+
+	# Empty services list
+	if "Services: None" in output:
+		return ServiceListResponse([])
+
+	# Extract services list from verbose rosnode output
+	output = output.split("Services: \n")[1] 		# Discard everything before the line "Services:"
+	output = output.split("\n\n")[0].split('\n') 	# Discard everything after the services list (always ends with a '\n\n')
+
+	# Remove the '*' prefix from every service name
+	services = map( lambda name: name.rsplit("* ")[1], output )
+	# Remove automatically generated services (get_logger_level, set_loggers)
+	services = filter( lambda name: True if "logger" not in name else False, services )
 	return ServiceListResponse(services)
+
+
+
+
+
+
+
+
 
 def handle_run_node (req):
 	# get a set of running nodes
