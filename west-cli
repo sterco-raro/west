@@ -19,6 +19,12 @@ function is_master_running {
 # Launches rosbridge websocket server and our west_tools node
 if test "$1" == "start"; then
 
+	# Don't spawn multiple instances
+	if is_master_running; then
+		echo "Another 'rosmaster' instance is already active"
+		exit 0
+	fi
+
 	# Create a 'logs' folder in the current directory if missing
 	test ! -d logs && mkdir logs
 
